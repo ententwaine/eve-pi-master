@@ -4,7 +4,7 @@ const AuthContext = createContext();
 
 // Using environment variables for Client ID
 const CLIENT_ID = import.meta.env.VITE_EVE_CLIENT_ID || 'YOUR_CLIENT_ID_HERE';
-const CALLBACK_URL = 'http://localhost:5173/callback';
+const CALLBACK_URL = `${window.location.origin}/callback`;
 const SCOPES = 'esi-planets.manage_planets.v1 esi-skills.read_skills.v1';
 
 // PKCE Helper Functions
