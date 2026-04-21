@@ -1,0 +1,179 @@
+.vp-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-bottom: var(--space-lg);
+}
+
+.vp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-bg-panel);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+}
+
+.planet-slots-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+}
+
+.planet-card {
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.planet-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 10px rgba(0, 217, 247, 0.1);
+}
+
+.planet-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.planet-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-main);
+}
+
+.planet-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.stat-bar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.stat-bar-bg {
+    height: 8px;
+    background: var(--color-bg-base);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.stat-bar-fill.safe { background: var(--color-success); }
+.stat-bar-fill.warning { background: var(--color-warning); }
+.stat-bar-fill.danger { background: var(--color-danger); }
+
+.building-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: var(--space-sm);
+}
+
+.building-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-bg-base);
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+}
+
+.building-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.building-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+}
+
+.building-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.btn-small {
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-main);
+    cursor: pointer;
+}
+
+.btn-small:hover:not(:disabled) {
+    background: var(--color-primary);
+    color: var(--color-bg-base);
+}
+
+.btn-small:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.add-building-select {
+    width: 100%;
+    padding: var(--space-sm);
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-primary);
+    color: var(--color-text-main);
+    border-radius: var(--radius-sm);
+    margin-top: var(--space-sm);
+    outline: none;
+}
+
+.extractor-note {
+    font-size: 0.75rem;
+    color: var(--color-warning);
+    margin-top: var(--space-xs);
+    text-align: center;
+}
+
+/* Custom Scrollbar for building list */
+.building-list::-webkit-scrollbar {
+    width: 4px;
+}
+.building-list::-webkit-scrollbar-track {
+    background: var(--color-bg-base);
+}
+.building-list::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+}

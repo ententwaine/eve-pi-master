@@ -28,6 +28,51 @@ export const fetchMarketOrders = async (regionId, typeId, orderType = 'all') => 
     }
 };
 
+export const fetchCharacterSkills = async (characterId, token) => {
+    try {
+        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!response.ok) throw new Error('Failed to fetch skills');
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
+export const fetchPlanetaryColonies = async (characterId, token) => {
+    try {
+        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!response.ok) throw new Error('Failed to fetch planets');
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+export const fetchPlanetDetails = async (characterId, planetId, token) => {
+    try {
+        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!response.ok) throw new Error(`Failed to fetch planet details for ${planetId}`);
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
 export const getLowestSellOrder = async (regionId, typeId, systemId = null) => {
     const orders = await fetchMarketOrders(regionId, typeId, 'sell');
     let validOrders = orders;

@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import { useTradeHub } from '../../context/TradeHubContext';
 import { commodities } from '../../data/pi_data';
 import { getLowestSellOrder } from '../../services/esiApi';
+import eveDependencies from '../../data/pi_used_in_eve.json';
 
 const CommodityCard = ({ commodity, selectedHub }) => {
     const [priceData, setPriceData] = useState({ sellPrice: 0, inputCost: 0, profit: 0, loading: true });
+    const [isHovered, setIsHovered] = useState(false);
+    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -46,15 +49,21 @@ const CommodityCard = ({ commodity, selectedHub }) => {
     };
 
     return (
-        <div className="glass-panel" style={{
-            minWidth: '300px',
-            padding: 'var(--space-md)',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--space-sm)',
-            position: 'relative'
-        }}>
+        <div 
+            className="glass-panel" 
+            style={{
+                minWidth: '300px',
+                padding: 'var(--space-md)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--space-sm)',
+                position: 'relative',
+                zIndex: isHovered || isTooltipVisible ? 100 : 1
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
                 <img 
                     src={`https://images.evetech.net/types/${commodity.id}/icon?size=32`} 
@@ -119,55 +128,85 @@ const CommodityCard = ({ commodity, selectedHub }) => {
                         gap: '4px',
                         cursor: 'help',
                         fontSize: '0.8rem',
-                        color: 'var(--color-text-muted)',
-                        background: 'rgba(255,255,255,0.05)',
+                        color: isTooltipVisible ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        background: isTooltipVisible ? 'rgba(0, 217, 247, 0.1)' : 'rgba(255,255,255,0.05)',
                         padding: '4px 8px',
                         borderRadius: '12px',
-                        border: '1px solid var(--color-border)'
+                        border: `1px solid ${isTooltipVisible ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                        transition: 'all 0.2s'
                     }}
+                    onClick={() => setIsTooltipVisible(!isTooltipVisible)}
                 >
                     <span style={{ fontStyle: 'italic', fontFamily: 'serif' }}>i</span>
                     <span>Used In</span>
                 </div>
-                <div className="used-in-tooltip" style={{
-                    position: 'absolute',
-                    bottom: '100%',
-                    right: 0,
-                    marginBottom: '8px',
-                    width: '200px',
-                    maxHeight: '150px',
-                    overflowY: 'auto',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: 'var(--space-sm)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                    zIndex: 10,
-                    display: 'none',
-                    fontSize: '0.85rem'
-                }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px', color: 'var(--color-text-main)' }}>Used to craft:</div>
-                    {commodities.filter(c => c.inputs.some(i => i.id === commodity.id)).length > 0 ? (
-                        <ul style={{ margin: 0, paddingLeft: '16px', color: 'var(--color-text-muted)' }}>
-                            {commodities.filter(c => c.inputs.some(i => i.id === commodity.id)).map(c => (
-                                <li key={c.id}>{c.name}</li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <div style={{ fontStyle: 'italic', color: 'var(--color-text-muted)' }}>Nothing (Top Tier)</div>
-                    )}
-                </div>
+                
+                {isTooltipVisible && (
+                    <div className="used-in-tooltip" style={{
+                        position: 'absolute',
+                        bottom: '100%',
+                        right: 0,
+                        marginBottom: '8px',
+                        width: '240px',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        background: 'var(--color-bg-base)',
+                        border: '1px solid var(--color-primary)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 'var(--space-sm)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.8)',
+                        zIndex: 1000,
+                        fontSize: '0.85rem'
+                    }}>
+                        <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            marginBottom: '8px', 
+                            borderBottom: '1px solid rgba(255,255,255,0.1)', 
+                            paddingBottom: '4px',
+                            position: 'sticky',
+                            top: '-8px',
+                            background: 'var(--color-bg-base)',
+                            zIndex: 10,
+                            paddingTop: '8px',
+                            marginTop: '-8px'
+                        }}>
+                            <div style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>Used to craft:</div>
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setIsTooltipVisible(false); }}
+                                style={{ 
+                                    background: 'none', 
+                                    border: 'none', 
+                                    color: 'var(--color-text-muted)', 
+                                    cursor: 'pointer',
+                                    fontSize: '1rem',
+                                    padding: '0 4px'
+                                }}
+                                onMouseOver={(e) => e.target.style.color = 'var(--color-danger)'}
+                                onMouseOut={(e) => e.target.style.color = 'var(--color-text-muted)'}
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        {(() => {
+                            const piUses = commodities.filter(c => c.inputs.some(i => Number(i.id) === Number(commodity.id))).map(c => c.name);
+                            const eveUses = eveDependencies[commodity.id] || [];
+                            const combinedUses = [...new Set([...piUses, ...eveUses])].sort();
+                            
+                            return combinedUses.length > 0 ? (
+                                <ul style={{ margin: 0, paddingLeft: '16px', color: 'var(--color-text-main)' }}>
+                                    {combinedUses.map(name => (
+                                        <li key={name}>{name}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div style={{ fontStyle: 'italic', color: 'var(--color-text-muted)' }}>Nothing</div>
+                            );
+                        })()}
+                    </div>
+                )}
             </div>
-            
-            <style>{`
-                .used-in-container:hover .used-in-tooltip {
-                    display: block !important;
-                }
-                .used-in-icon:hover {
-                    color: var(--color-primary) !important;
-                    border-color: var(--color-primary) !important;
-                }
-            `}</style>
         </div>
     );
 };
@@ -236,9 +275,12 @@ const DashboardPage = () => {
 
     return (
         <div>
-            <header style={{ marginBottom: 'var(--space-lg)' }}>
+            <header style={{ marginBottom: 'var(--space-lg)', maxWidth: '800px' }}>
                 <h1 style={{ fontWeight: 300 }}>Market Dashboard</h1>
-                <p className="text-muted">Live profitability overview from {selectedHub.name}</p>
+                <p className="text-muted" style={{ marginBottom: 'var(--space-md)' }}>
+                    Welcome to the EVE Pi Master dashboard. This tool provides a live profitability overview for Planetary Interaction (PI) commodities based on real-time EVE Online market data. 
+                    Use the sliders below to explore commodities by tier, see their input requirements, and identify the most profitable items to produce at your selected trade hub.
+                </p>
             </header>
 
             <TierSlider tier="P4" selectedHub={selectedHub} />

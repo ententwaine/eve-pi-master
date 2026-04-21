@@ -1,0 +1,213 @@
+.cc-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-bottom: var(--space-lg);
+}
+
+.cc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-bg-panel);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+}
+
+.live-planets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--space-lg);
+}
+
+.live-planet-card {
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.planet-card-bg {
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    opacity: 0.1;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.live-planet-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.lp-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-sm);
+}
+
+.lp-title-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.lp-system {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+.lp-type {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+}
+
+.lp-upgrade {
+    margin-left: auto;
+    font-size: 0.8rem;
+    background: rgba(0, 217, 247, 0.1);
+    color: var(--color-primary);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-primary);
+}
+
+.lp-section {
+    margin-top: var(--space-md);
+}
+
+.lp-section-title {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.lp-storage-bars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.storage-bar-container {
+    background: var(--color-bg-base);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm);
+    border: 1px solid var(--color-border);
+}
+
+.storage-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.storage-track {
+    height: 6px;
+    background: var(--color-bg-panel);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.storage-fill {
+    height: 100%;
+    background: var(--color-primary);
+    transition: width 0.5s ease;
+}
+
+.storage-fill.full {
+    background: var(--color-danger);
+}
+
+.lp-buildings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.lp-building-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-bg-base);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    font-size: 0.8rem;
+}
+
+.lp-building-badge img {
+    width: 20px;
+    height: 20px;
+    border-radius: 2px;
+}
+
+.extractor-activity {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+    padding: var(--space-sm);
+    background: rgba(0, 217, 247, 0.05);
+    border: 1px solid rgba(0, 217, 247, 0.2);
+    border-radius: var(--radius-sm);
+}
+
+.extraction-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-success);
+    box-shadow: 0 0 8px var(--color-success);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 255, 136, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+}
+
+.auth-warning {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    text-align: center;
+    gap: var(--space-md);
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    gap: var(--space-md);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(0, 217, 247, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--color-primary);
+    animation: spin 1s ease-in-out infinite;
+}

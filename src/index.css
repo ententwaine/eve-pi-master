@@ -76,7 +76,7 @@ body {
 /* Top Navigation */
 .topnav {
   width: 100%;
-  height: 60px;
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -87,6 +87,28 @@ body {
   position: sticky;
   top: 0;
   z-index: 1000;
+}
+
+.topnav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: var(--space-xs);
+}
+
+.topnav-content {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .topnav-links {
@@ -132,7 +154,7 @@ body {
 .dropdown-content {
   display: none;
   position: absolute;
-  top: 60px;
+  top: 100%;
   left: 0;
   background-color: var(--color-bg-base);
   min-width: 160px;
@@ -174,6 +196,17 @@ body {
 .hub-selector option {
   background-color: var(--color-bg-base);
   color: var(--color-text-main);
+}
+
+.topnav-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.auth-container {
+  display: flex;
+  align-items: center;
 }
 
 .main-content {
@@ -219,15 +252,165 @@ body {
   .topnav {
     flex-direction: column;
     height: auto;
-    padding: var(--space-sm);
-    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-lg);
   }
+  
+  .mobile-menu-btn {
+    display: block;
+  }
+  
+  .topnav-content {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: var(--space-md);
+    padding-top: var(--space-md);
+  }
+  
+  .topnav-content.open {
+    display: flex;
+  }
+  
   .topnav-links {
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
     height: auto;
   }
+  
+  .topnav-link {
+    justify-content: flex-start;
+    padding: var(--space-sm) 0;
+  }
+  
+  .hub-selector-container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .dropdown:hover .dropdown-content {
+    display: none;
+  }
+  
+  .dropdown-content {
+    position: static;
+    display: none;
+    flex-direction: column;
+    background: transparent;
+    border: none;
+    padding-left: var(--space-md);
+    width: 100%;
+  }
+
+  .dropdown-content.mobile-open {
+    display: flex;
+  }
+
   .responsive-columns {
     flex-direction: column;
   }
+}
+
+/* Footer & Market Ticker */
+.app-footer {
+  width: 100%;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-panel);
+  text-align: center;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-content {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 0.875rem;
+}
+
+.market-ticker-container {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-sm) 0;
+  display: flex;
+  align-items: center;
+}
+
+.market-ticker-container.loading {
+  justify-content: center;
+  height: 60px;
+}
+
+.ticker-track {
+  display: inline-flex;
+  gap: var(--space-lg);
+  animation: scroll-ticker 60s linear infinite;
+  /* will-change to optimize scrolling */
+  will-change: transform;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  min-width: max-content;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.ticker-item:hover {
+  transform: translateY(-2px);
+  background: var(--color-bg-base);
+  border-color: var(--color-primary);
+}
+
+.ticker-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(0,0,0,0.5);
+}
+
+.ticker-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.ticker-name {
+  color: var(--color-text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ticker-price-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.ticker-price {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.ticker-trend {
+  display: flex;
+  align-items: center;
+}
+
+@keyframes scroll-ticker {
+  0% { transform: translateX(0); }
+  /* Translate exactly by a fraction. Since we repeated the array 3 times, moving by 1/3 covers the entire array once cleanly to loop */
+  100% { transform: translateX(calc(-100% / 3)); }
 }
