@@ -96,6 +96,7 @@ export const AuthProvider = ({ children }) => {
                 client_id: CLIENT_ID,
                 code: code,
                 code_verifier: codeVerifier,
+                redirect_uri: CALLBACK_URL,
             })
         });
 
