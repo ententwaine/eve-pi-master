@@ -75,6 +75,9 @@ const TopNav = () => {
                     <NavLink to="/command-center" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
                         Command Center
                     </NavLink>
+                    <NavLink to="/planets" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
+                        Planets
+                    </NavLink>
                     <NavLink to="/consultant" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
                         PI Consultant
                     </NavLink>
