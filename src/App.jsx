@@ -16,6 +16,7 @@ import VirtualPlanetPage from './features/virtual_planet/VirtualPlanetPage';
 import CommandCenterPage from './features/command_center/CommandCenterPage';
 import ConsultantPage from './features/consultant/ConsultantPage';
 import AllOrdersPage from './features/market/AllOrdersPage';
+import PlanetsPage from './features/planets/PlanetsPage';
 import Footer from './components/Footer';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
                             <Route path="/virtual-planet" element={<VirtualPlanetPage />} />
                             <Route path="/command-center" element={<CommandCenterPage />} />
                             <Route path="/consultant" element={<ConsultantPage />} />
+                            <Route path="/planets" element={<PlanetsPage />} />
                             <Route path="/commodity/:id" element={<CommodityDetailPage />} />
                             <Route path="/orders/:regionId/:typeId" element={<AllOrdersPage />} />
                             <Route path="/callback" element={<CallbackPage />} />

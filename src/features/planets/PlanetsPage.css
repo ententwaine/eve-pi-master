@@ -1,0 +1,171 @@
+.planets-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-bottom: var(--space-xl);
+}
+
+.planets-header {
+    margin-bottom: var(--space-xl);
+    text-align: center;
+}
+
+.planets-header h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    margin-bottom: var(--space-sm);
+    color: var(--color-primary);
+}
+
+.planets-header p {
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.planets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-xl);
+}
+
+/* Planet Card */
+.planet-card {
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.planet-card:hover {
+    transform: translateY(-10px);
+    border-color: var(--planet-color);
+    box-shadow: 0 10px 30px -10px var(--planet-color);
+}
+
+/* Planet Orb & Orbit Animation */
+.planet-orb-container {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto var(--space-lg) auto;
+    position: relative;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.planet-orb-container::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    right: -10%;
+    bottom: -10%;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, var(--planet-color) 0%, transparent 60%);
+    opacity: 0.1;
+    z-index: 0;
+    transition: opacity 0.4s;
+}
+
+.planet-card:hover .planet-orb-container::before {
+    opacity: 0.3;
+}
+
+.planet-image {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    object-fit: cover;
+    z-index: 1;
+    transition: transform 0.8s ease-in-out;
+    animation: slowOrbit 60s linear infinite;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+}
+
+.planet-card:hover .planet-image {
+    animation-play-state: paused;
+    transform: scale(1.1);
+}
+
+@keyframes slowOrbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Planet Info */
+.planet-info h2 {
+    margin: 0 0 var(--space-sm) 0;
+    font-size: 1.8rem;
+    color: var(--planet-color);
+}
+
+.planet-description {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: var(--space-lg);
+    line-height: 1.5;
+}
+
+/* Resources Reveal */
+.planet-resources {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(0,0,0,0.2);
+    border-radius: var(--radius-md);
+    margin-top: 0;
+}
+
+.planet-card.expanded .planet-resources {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: var(--space-lg);
+    padding: var(--space-md);
+}
+
+.resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.resource-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm);
+    background: rgba(255,255,255,0.05);
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+    text-decoration: none;
+    color: var(--color-text-main);
+}
+
+.resource-item:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.resource-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+}
+
+.resource-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Modal Overlay style fallback just in case we need a larger view */
+.planet-card.expanded {
+    border-color: var(--planet-color);
+    background: linear-gradient(180deg, var(--color-bg-panel) 0%, rgba(0,0,0,0.8) 100%);
+}

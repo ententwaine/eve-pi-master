@@ -149,3 +149,14 @@ export const RESOURCE_TO_PLANETS = {
     2311: ["Gas", "Storm"], // Reactive Gas
     2308: ["Lava", "Plasma", "Storm"], // Suspended Plasma
 };
+
+export const planetTypes = [
+    { id: 2015, name: "Barren", color: "var(--color-primary)", description: "Desolate and lifeless, featuring minimal atmospheric conditions.", resources: [2268, 2267, 2288, 2073, 2270] },
+    { id: 13, name: "Gas", color: "#66ffcc", description: "Vast gas giants with dense, stormy atmospheres.", resources: [2268, 2267, 2309, 2310, 2311] },
+    { id: 12, name: "Ice", color: "#ccffff", description: "Frozen worlds covered entirely by thick glacial sheets.", resources: [2268, 2272, 2073, 2306, 2286] },
+    { id: 2014, name: "Lava", color: "#ff6600", description: "Volcanically hyper-active worlds with oceans of molten rock.", resources: [2267, 2307, 2272, 2306, 2308] },
+    { id: 14, name: "Oceanic", color: "#3399ff", description: "Worlds entirely enveloped by deep global oceans.", resources: [2268, 2288, 2287, 2073, 2286] },
+    { id: 2017, name: "Plasma", color: "#ff33cc", description: "Scorched planets bathed in intense radiation and plasma storms.", resources: [2267, 2272, 2270, 2306, 2308] },
+    { id: 2016, name: "Storm", color: "#ffcc00", description: "Turbulent worlds defined by violent global weather systems.", resources: [2268, 2267, 2309, 2310, 2308] },
+    { id: 11, name: "Temperate", color: "#66ff66", description: "Lush, life-bearing worlds with stable climates.", resources: [2268, 2305, 2288, 2287, 2073] }
+];
