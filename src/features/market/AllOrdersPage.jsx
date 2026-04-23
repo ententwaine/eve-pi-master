@@ -21,6 +21,7 @@ const formatVolume = (val) => {
 const AllOrdersPage = () => {
     const { regionId, typeId } = useParams();
     const [viewMode, setViewMode] = useState('orders'); // 'orders', 'history_chart', 'history_list'
+    const [chartTimeframe, setChartTimeframe] = useState(30);
     const [orders, setOrders] = useState([]);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -52,7 +53,7 @@ const AllOrdersPage = () => {
     }, [orders]);
 
     const chartData = useMemo(() => {
-        return history.slice(-30).map(d => ({
+        return history.slice(-chartTimeframe).map(d => ({
             date: new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
             fullDate: d.date,
             average: d.average,
@@ -61,7 +62,7 @@ const AllOrdersPage = () => {
             volume: d.volume,
             orderCount: d.order_count
         }));
-    }, [history]);
+    }, [history, chartTimeframe]);
 
     // Custom Tooltip for Chart
     const CustomTooltip = ({ active, payload, label }) => {
@@ -184,7 +185,27 @@ const AllOrdersPage = () => {
 
                     {viewMode === 'history_chart' && (
                         <div className="chart-card">
-                            <h2>30-Day Market Trends</h2>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
+                                <h2 style={{ margin: 0 }}>Market Trends</h2>
+                                <select 
+                                    value={chartTimeframe} 
+                                    onChange={(e) => setChartTimeframe(Number(e.target.value))}
+                                    style={{
+                                        background: 'var(--color-bg-base)',
+                                        color: 'var(--color-text-main)',
+                                        border: '1px solid var(--color-border)',
+                                        padding: 'var(--space-sm) var(--space-md)',
+                                        borderRadius: 'var(--radius-sm)',
+                                        outline: 'none',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value={7}>Last 7 Days</option>
+                                    <option value={30}>Last 30 Days</option>
+                                    <option value={120}>Last 4 Months</option>
+                                    <option value={365}>Last 1 Year</option>
+                                </select>
+                            </div>
                             <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
