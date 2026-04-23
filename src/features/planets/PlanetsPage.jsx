@@ -39,7 +39,7 @@ const PlanetsPage = () => {
                         >
                             <div className="planet-orb-container">
                                 <img 
-                                    src={`https://images.evetech.net/types/${planet.id}/icon?size=256`} 
+                                    src={planet.image} 
                                     alt={planet.name} 
                                     className="planet-image" 
                                 />
