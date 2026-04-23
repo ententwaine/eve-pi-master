@@ -8,6 +8,7 @@ const TopNav = () => {
     const { user, login, logout } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMaterialsOpen, setIsMaterialsOpen] = useState(false);
+    const [isPlannersOpen, setIsPlannersOpen] = useState(false);
 
     const toggleMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -16,6 +17,7 @@ const TopNav = () => {
     const closeMenu = () => {
         setIsMobileMenuOpen(false);
         setIsMaterialsOpen(false);
+        setIsPlannersOpen(false);
     };
 
     return (
@@ -66,12 +68,15 @@ const TopNav = () => {
                     <NavLink to="/market" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
                         Pi Market
                     </NavLink>
-                    <NavLink to="/planner" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-                        Planner
-                    </NavLink>
-                    <NavLink to="/virtual-planet" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-                        Virtual Planet
-                    </NavLink>
+
+                    <div className="dropdown">
+                        <span className="topnav-link" style={{ cursor: 'pointer' }} onClick={() => setIsPlannersOpen(!isPlannersOpen)}>Planners ▼</span>
+                        <div className={`dropdown-content ${isPlannersOpen ? 'mobile-open' : ''}`}>
+                            <NavLink to="/planner" onClick={closeMenu}>PI Planner</NavLink>
+                            <NavLink to="/virtual-planet" onClick={closeMenu}>Virtual Planet</NavLink>
+                            <NavLink to="/production-vs" onClick={closeMenu}>Production Vs</NavLink>
+                        </div>
+                    </div>
                     <NavLink to="/command-center" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
                         Command Center
                     </NavLink>

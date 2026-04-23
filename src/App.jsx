@@ -17,6 +17,7 @@ import CommandCenterPage from './features/command_center/CommandCenterPage';
 import ConsultantPage from './features/consultant/ConsultantPage';
 import AllOrdersPage from './features/market/AllOrdersPage';
 import PlanetsPage from './features/planets/PlanetsPage';
+import ProductionVsPage from './features/production_vs/ProductionVsPage';
 import Footer from './components/Footer';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
                             <Route path="/market" element={<MarketPage />} />
                             <Route path="/planner" element={<PlannerPage />} />
                             <Route path="/virtual-planet" element={<VirtualPlanetPage />} />
+                            <Route path="/production-vs" element={<ProductionVsPage />} />
                             <Route path="/command-center" element={<CommandCenterPage />} />
                             <Route path="/consultant" element={<ConsultantPage />} />
                             <Route path="/planets" element={<PlanetsPage />} />
