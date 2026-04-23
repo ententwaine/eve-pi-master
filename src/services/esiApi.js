@@ -28,6 +28,31 @@ export const fetchMarketOrders = async (regionId, typeId, orderType = 'all') => 
     }
 };
 
+export const fetchMarketHistory = async (regionId, typeId) => {
+    const cacheKey = `history-${regionId}-${typeId}`;
+    if (cache.has(cacheKey)) {
+        const cached = cache.get(cacheKey);
+        // Cache history for 1 hour
+        if (Date.now() - cached.timestamp < 3600000) {
+            return cached.data;
+        }
+    }
+
+    try {
+        const response = await fetch(`${ESI_BASE_URL}/markets/${regionId}/history/?datasource=tranquility&type_id=${typeId}`);
+        if (!response.ok) {
+            throw new Error(`ESI Error: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        cache.set(cacheKey, { timestamp: Date.now(), data });
+        return data;
+    } catch (error) {
+        console.error('Failed to fetch market history:', error);
+        return [];
+    }
+};
+
 export const fetchCharacterSkills = async (characterId, token) => {
     try {
         const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility`, {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTradeHub } from '../../context/TradeHubContext';
 import { commodities } from '../../data/pi_data';
 import { getLowestSellOrder, getHighestBuyOrder } from '../../services/esiApi';
@@ -59,14 +60,12 @@ const MarketRow = ({ commodity, selectedHub }) => {
                 {marketData.loading ? '...' : formatISK(marketData.buy)}
             </td>
             <td style={{ padding: 'var(--space-sm)', textAlign: 'right' }}>
-                <a 
-                    href={`https://evetycoon.com/market/${commodity.id}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    style={{ color: 'var(--color-primary)', textDecoration: 'none' }}
+                <Link 
+                    to={`/orders/${selectedHub.regionId}/${commodity.id}`} 
+                    style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 'bold' }}
                 >
-                    View Orders ↗
-                </a>
+                    View Orders &rarr;
+                </Link>
             </td>
         </tr>
     );

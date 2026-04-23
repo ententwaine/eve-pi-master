@@ -15,6 +15,7 @@ import CallbackPage from './features/auth/CallbackPage';
 import VirtualPlanetPage from './features/virtual_planet/VirtualPlanetPage';
 import CommandCenterPage from './features/command_center/CommandCenterPage';
 import ConsultantPage from './features/consultant/ConsultantPage';
+import AllOrdersPage from './features/market/AllOrdersPage';
 import Footer from './components/Footer';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
                             <Route path="/command-center" element={<CommandCenterPage />} />
                             <Route path="/consultant" element={<ConsultantPage />} />
                             <Route path="/commodity/:id" element={<CommodityDetailPage />} />
+                            <Route path="/orders/:regionId/:typeId" element={<AllOrdersPage />} />
                             <Route path="/callback" element={<CallbackPage />} />
                         </Routes>
                     </main>
