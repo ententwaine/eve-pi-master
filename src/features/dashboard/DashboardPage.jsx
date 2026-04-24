@@ -212,8 +212,47 @@ const CommodityCard = ({ commodity, selectedHub }) => {
 };
 
 const TierSlider = ({ tier, selectedHub }) => {
-    const tierCommodities = commodities.filter(c => c.tier === tier);
+    const allTierCommodities = commodities.filter(c => c.tier === tier);
     const scrollRef = useRef(null);
+    const [showTop6, setShowTop6] = useState(false);
+    const [sortedCommodities, setSortedCommodities] = useState(allTierCommodities);
+    const [isSorting, setIsSorting] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        if (!showTop6) {
+            setSortedCommodities(allTierCommodities);
+            return;
+        }
+
+        const sortCommodities = async () => {
+            setIsSorting(true);
+            try {
+                // Fetch sell prices for all commodities in this tier
+                const prices = await Promise.all(
+                    allTierCommodities.map(async (c) => {
+                        const price = await getLowestSellOrder(selectedHub.regionId, c.id, selectedHub.systemId);
+                        return { ...c, sellPrice: price };
+                    })
+                );
+                
+                prices.sort((a, b) => b.sellPrice - a.sellPrice);
+                
+                if (isMounted) {
+                    // Take top 6
+                    setSortedCommodities(prices.slice(0, 6));
+                    setIsSorting(false);
+                }
+            } catch (error) {
+                console.error("Failed to sort commodities:", error);
+                if (isMounted) setIsSorting(false);
+            }
+        };
+
+        sortCommodities();
+
+        return () => { isMounted = false; };
+    }, [showTop6, tier, selectedHub]); // Depend on selectedHub so it re-sorts if hub changes
 
     const scroll = (direction) => {
         if (scrollRef.current) {
@@ -224,8 +263,35 @@ const TierSlider = ({ tier, selectedHub }) => {
 
     return (
         <div style={{ marginBottom: 'var(--space-lg)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-xs)' }}>
-                <h2 style={{ margin: 0 }}>{tier} Commodities</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-xs)', flexWrap: 'wrap', gap: 'var(--space-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                    <h2 style={{ margin: 0 }}>{tier} Commodities</h2>
+                    <button
+                        onClick={() => setShowTop6(!showTop6)}
+                        style={{
+                            background: showTop6 ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
+                            color: showTop6 ? 'var(--color-bg-base)' : 'var(--color-text-main)',
+                            border: `1px solid ${showTop6 ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                            padding: 'var(--space-xs) var(--space-sm)',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            fontWeight: 'bold',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                        }}
+                    >
+                        {isSorting ? (
+                            <span style={{ fontStyle: 'italic' }}>Sorting...</span>
+                        ) : (
+                            <>
+                                <span>⭐</span> Top 6
+                            </>
+                        )}
+                    </button>
+                </div>
                 <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
                     <button 
                         onClick={() => scroll('left')}
@@ -262,7 +328,7 @@ const TierSlider = ({ tier, selectedHub }) => {
                 </div>
             </div>
             <div className="horizontal-scroll" ref={scrollRef}>
-                {tierCommodities.map(c => (
+                {sortedCommodities.map(c => (
                     <CommodityCard key={c.id} commodity={c} selectedHub={selectedHub} />
                 ))}
             </div>
