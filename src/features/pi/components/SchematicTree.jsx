@@ -138,11 +138,11 @@ const SchematicTree = ({ rootId, quantity = 1 }) => {
         <div style={{
             overflowX: 'auto',
             padding: 'var(--space-lg)',
-            display: 'flex',
-            justifyContent: 'center',
             minHeight: '300px'
         }}>
-            <TreeNode node={rootNode} />
+            <div style={{ width: 'max-content', margin: '0 auto' }}>
+                <TreeNode node={rootNode} />
+            </div>
         </div>
     );
 };
