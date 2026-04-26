@@ -149,7 +149,9 @@ const ConsultantPage = () => {
     return (
         <div className="consultant-container fade-in">
             <div className="chat-header">
-                <div className="piffany-avatar">P</div>
+                <div className="piffany-avatar">
+                    <img src="/piffany.jpg" alt="Piffany Profile" />
+                </div>
                 <div className="piffany-info">
                     <span className="piffany-name">Piffany</span>
                     <span className="piffany-title">PI Consultant Protocol v1.0</span>
