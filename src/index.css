@@ -22,6 +22,16 @@
   --radius-md: 8px;
 }
 
+[data-theme="light"] {
+  --color-bg-base: #f0f2f5;
+  --color-bg-panel: rgba(255, 255, 255, 0.85);
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-primary: #0088aa; /* Darkened cyan for contrast */
+  --color-accent: #cc8800; /* Darkened gold for contrast */
+  --color-text-main: #1a1a1a;
+  --color-text-muted: #555555;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
