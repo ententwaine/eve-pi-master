@@ -193,11 +193,13 @@ const CommodityDetailPage = () => {
             </div>
 
             {commodity.tier !== 'P0' && (
-                <div className="glass-panel" style={{ padding: 'var(--space-lg)', borderRadius: 'var(--radius-lg)', marginTop: 'var(--space-lg)' }}>
-                    <PlanetBreakdown targetId={commodity.id} hourlyYield={commodity.outputYield} />
+                <>
+                    <div className="glass-panel" style={{ padding: 'var(--space-lg)', borderRadius: 'var(--radius-lg)', marginTop: 'var(--space-lg)' }}>
+                        <PlanetBreakdown targetId={commodity.id} hourlyYield={commodity.outputYield} />
+                    </div>
                     
                     {summaryByTier && (
-                        <div style={{ marginTop: 'var(--space-xl)' }}>
+                        <div className="glass-panel" style={{ padding: 'var(--space-lg)', borderRadius: 'var(--radius-lg)', marginTop: 'var(--space-lg)' }}>
                             <h3 style={{ marginTop: 0, marginBottom: 'var(--space-md)' }}>Accounting Summary</h3>
                             <div style={{
                                 display: 'grid',
@@ -241,7 +243,7 @@ const CommodityDetailPage = () => {
                             </div>
                         </div>
                     )}
-                </div>
+                </>
             )}
         </div>
     );
