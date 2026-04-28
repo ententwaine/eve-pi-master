@@ -493,13 +493,13 @@ const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
             </div>
 
             {/* Added Planet Extraction Requirements below the flowchart as requested */}
-            <div style={{ marginTop: 'var(--space-lg)' }}>
+            <div className="glass-panel" style={{ marginTop: 'var(--space-lg)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-lg)' }}>
                 <PlanetBreakdown targetId={product.id} hourlyYield={targetQuantity} />
             </div>
 
             {/* Accounting Summary section added below Planet Extraction Requirements */}
             {summaryByTier && (
-                <div style={{ marginTop: 'var(--space-xl)' }}>
+                <div className="glass-panel" style={{ marginTop: 'var(--space-lg)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-lg)' }}>
                     <h3 style={{ marginTop: 0, marginBottom: 'var(--space-md)' }}>Accounting Summary</h3>
                     <div style={{
                         display: 'grid',
