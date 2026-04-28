@@ -26,7 +26,9 @@ const HomePage = () => {
                             <span className="tool-icon">🏪</span>
                         </div>
                         <p className="tool-desc text-muted">Analyze live market data and find the most profitable commodities across trade hubs.</p>
-                        <Link to="/market" className="btn btn-secondary tool-btn">Open Market</Link>
+                        <div className="tool-footer">
+                            <Link to="/market" className="btn btn-secondary tool-btn">Open Market</Link>
+                        </div>
                     </div>
 
                     <div className="tool-card glass-panel">
@@ -47,7 +49,9 @@ const HomePage = () => {
                             <span className="tool-icon">⚖️</span>
                         </div>
                         <p className="tool-desc text-muted">Compare two production chains side-by-side to determine the optimal path.</p>
-                        <Link to="/production-vs" className="btn btn-secondary tool-btn">Compare Chains</Link>
+                        <div className="tool-footer">
+                            <Link to="/production-vs" className="btn btn-secondary tool-btn">Compare Chains</Link>
+                        </div>
                     </div>
 
                     <div className="tool-card glass-panel">
@@ -68,7 +72,9 @@ const HomePage = () => {
                             <span className="tool-icon">🪐</span>
                         </div>
                         <p className="tool-desc text-muted">View detailed information on all planet types and their extractable resources.</p>
-                        <Link to="/planets" className="btn btn-secondary tool-btn">View Planets</Link>
+                        <div className="tool-footer">
+                            <Link to="/planets" className="btn btn-secondary tool-btn">View Planets</Link>
+                        </div>
                     </div>
 
                     <div className="tool-card glass-panel">
@@ -77,7 +83,9 @@ const HomePage = () => {
                             <span className="tool-icon">🤖</span>
                         </div>
                         <p className="tool-desc text-muted">Get AI-driven advice on optimizing your planetary interaction setups and market trades.</p>
-                        <Link to="/consultant" className="btn btn-secondary tool-btn">Ask Consultant</Link>
+                        <div className="tool-footer">
+                            <Link to="/consultant" className="btn btn-secondary tool-btn">Ask Consultant</Link>
+                        </div>
                     </div>
                 </div>
             </div>
