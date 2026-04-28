@@ -8,6 +8,14 @@ const formatISK = (value) => {
     return new Intl.NumberFormat('en-US', { style: 'decimal', maximumFractionDigits: 0 }).format(value) + ' ISK';
 };
 
+const VOLUMES = {
+    'P0': 0.01,
+    'P1': 0.38,
+    'P2': 1.5,
+    'P3': 6.0,
+    'P4': 100.0
+};
+
 // --- Recursive Tree Builder ---
 const buildTree = (itemId, quantity = 1) => {
     const item = commodities.find(c => c.id === Number(itemId));
@@ -173,26 +181,33 @@ const SchematicTree = ({ rootId, quantity = 1, onSummaryCalculated }) => {
 
     // Calculate accounting summary
     const summaryByTier = useMemo(() => {
-        if (!rootNode) return { sums: {}, items: {} };
+        if (!rootNode) return { sums: {}, items: {}, volumes: {} };
         const sums = {};
         const items = {};
+        const volumes = {};
         const traverse = (node) => {
             const price = prices[node.id] || 0;
             const value = price * node.quantity;
+            const volume = node.quantity * (VOLUMES[node.tier] || 0);
+
             if (!sums[node.tier]) sums[node.tier] = 0;
             sums[node.tier] += value;
+
+            if (!volumes[node.tier]) volumes[node.tier] = 0;
+            volumes[node.tier] += volume;
             
             if (!items[node.tier]) items[node.tier] = {};
             if (!items[node.tier][node.id]) {
-                items[node.tier][node.id] = { name: node.name, quantity: 0, totalValue: 0 };
+                items[node.tier][node.id] = { name: node.name, quantity: 0, totalValue: 0, totalVolume: 0 };
             }
             items[node.tier][node.id].quantity += node.quantity;
             items[node.tier][node.id].totalValue += value;
+            items[node.tier][node.id].totalVolume += volume;
 
             node.children.forEach(traverse);
         };
         traverse(rootNode);
-        return { sums, items };
+        return { sums, items, volumes };
     }, [rootNode, prices]);
 
     // Pass summary to parent if requested

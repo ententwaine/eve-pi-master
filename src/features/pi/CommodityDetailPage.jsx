@@ -237,6 +237,12 @@ const CommodityDetailPage = () => {
                                                     {formatSummaryISK(summaryByTier.sums[tier])}
                                                 </span>
                                             </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                                                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Volume:</span>
+                                                <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                                                    {(summaryByTier.volumes?.[tier] || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³
+                                                </span>
+                                            </div>
                                         </div>
                                     );
                                 })}
