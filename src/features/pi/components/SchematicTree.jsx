@@ -130,7 +130,7 @@ const TreeNode = ({ node, level = 0, prices }) => {
 };
 
 // --- Main Export ---
-const SchematicTree = ({ rootId, quantity = 1 }) => {
+const SchematicTree = ({ rootId, quantity = 1, onSummaryCalculated }) => {
     const rootNode = useMemo(() => buildTree(rootId, quantity), [rootId, quantity]);
     const { selectedHub } = useTradeHub() || { selectedHub: { name: 'Jita', regionId: 10000002, systemId: 30000142 } }; // Fallback if no provider
     const [prices, setPrices] = useState({});
@@ -195,6 +195,13 @@ const SchematicTree = ({ rootId, quantity = 1 }) => {
         return { sums, items };
     }, [rootNode, prices]);
 
+    // Pass summary to parent if requested
+    useEffect(() => {
+        if (onSummaryCalculated) {
+            onSummaryCalculated(summaryByTier);
+        }
+    }, [summaryByTier, onSummaryCalculated]);
+
     // Track vertical positions of tiers for aligned summaries
     useEffect(() => {
         const updatePositions = () => {
@@ -232,50 +239,6 @@ const SchematicTree = ({ rootId, quantity = 1 }) => {
                 <div style={{ width: 'max-content' }}>
                     <TreeNode node={rootNode} prices={prices} />
                 </div>
-            </div>
-            
-            {/* Aligned Accounting Summary Sidebars */}
-            <div className="accounting-summary-container" style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-md)',
-                minWidth: '280px',
-                width: '280px',
-                height: 'fit-content'
-            }}>
-                {['P4', 'P3', 'P2', 'P1', 'P0'].map(tier => {
-                    if (summaryByTier.sums[tier] === undefined) return null;
-                    
-                    return (
-                        <div key={tier} className="glass-panel" style={{
-                            width: '100%',
-                            padding: 'var(--space-md)',
-                            borderRadius: 'var(--radius-md)',
-                            background: 'rgba(20, 22, 30, 0.9)',
-                            border: `1px solid var(--color-tier-${tier.toLowerCase()})`,
-                        }}>
-                            <h4 style={{ margin: '0 0 var(--space-sm) 0', color: `var(--color-tier-${tier.toLowerCase()})`, borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
-                                {tier} Accounting
-                            </h4>
-                            
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                                {Object.values(summaryByTier.items[tier] || {}).map(item => (
-                                    <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                                        <span>{item.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })}x {item.name}</span>
-                                        <span style={{ whiteSpace: 'nowrap', marginLeft: '8px' }}>{formatISK(item.totalValue)}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' }}>
-                                <span style={{ color: `var(--color-tier-${tier.toLowerCase()})`, fontWeight: 'bold', fontSize: '0.9rem' }}>{tier} Total:</span>
-                                <span style={{ color: 'var(--color-text-main)', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', marginLeft: '8px' }}>
-                                    {formatISK(summaryByTier.sums[tier])}
-                                </span>
-                            </div>
-                        </div>
-                    );
-                })}
             </div>
         </div>
     );

@@ -441,6 +441,7 @@ const PlannerPage = () => {
 
 const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
     const [profitInfo, setProfitInfo] = useState({ sell: 0, cost: 0, loading: true });
+    const [summaryByTier, setSummaryByTier] = useState(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -488,13 +489,60 @@ const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
             </div>
 
             <div style={{ background: 'rgba(10, 12, 18, 0.6)', borderRadius: 'var(--radius-md)' }}>
-                <SchematicTree rootId={product.id} quantity={targetQuantity} />
+                <SchematicTree rootId={product.id} quantity={targetQuantity} onSummaryCalculated={setSummaryByTier} />
             </div>
 
             {/* Added Planet Extraction Requirements below the flowchart as requested */}
             <div style={{ marginTop: 'var(--space-lg)' }}>
                 <PlanetBreakdown targetId={product.id} hourlyYield={targetQuantity} />
             </div>
+
+            {/* Accounting Summary section added below Planet Extraction Requirements */}
+            {summaryByTier && (
+                <div style={{ marginTop: 'var(--space-xl)' }}>
+                    <h3 style={{ marginTop: 0, marginBottom: 'var(--space-md)' }}>Accounting Summary</h3>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                        gap: 'var(--space-md)'
+                    }}>
+                        {['P4', 'P3', 'P2', 'P1', 'P0'].map(tier => {
+                            if (summaryByTier.sums[tier] === undefined) return null;
+                            const formatSummaryISK = (val) => new Intl.NumberFormat('en-US', { style: 'decimal', maximumFractionDigits: 0 }).format(val) + ' ISK';
+                            
+                            return (
+                                <div key={tier} className="glass-panel" style={{
+                                    width: '100%',
+                                    padding: 'var(--space-md)',
+                                    borderRadius: 'var(--radius-md)',
+                                    background: 'rgba(20, 22, 30, 0.9)',
+                                    border: `1px solid var(--color-tier-${tier.toLowerCase()})`,
+                                }}>
+                                    <h4 style={{ margin: '0 0 var(--space-sm) 0', color: `var(--color-tier-${tier.toLowerCase()})`, borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
+                                        {tier} Accounting
+                                    </h4>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                                        {Object.values(summaryByTier.items[tier] || {}).map(item => (
+                                            <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                                <span>{item.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })}x {item.name}</span>
+                                                <span style={{ whiteSpace: 'nowrap', marginLeft: '8px' }}>{formatSummaryISK(item.totalValue)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' }}>
+                                        <span style={{ color: `var(--color-tier-${tier.toLowerCase()})`, fontWeight: 'bold', fontSize: '0.9rem' }}>{tier} Total:</span>
+                                        <span style={{ color: 'var(--color-text-main)', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', marginLeft: '8px' }}>
+                                            {formatSummaryISK(summaryByTier.sums[tier])}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
