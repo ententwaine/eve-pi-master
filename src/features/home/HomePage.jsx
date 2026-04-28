@@ -17,6 +17,71 @@ const HomePage = () => {
                 </div>
             </div>
 
+            <div className="quick-tools-section">
+                <h2 className="section-title text-main">Quick Tools</h2>
+                <div className="tools-grid">
+                    <div className="tool-card glass-panel">
+                        <div className="tool-header">
+                            <h3 className="tool-title text-primary">Pi Market</h3>
+                            <span className="tool-icon">🏪</span>
+                        </div>
+                        <p className="tool-desc text-muted">Analyze live market data and find the most profitable commodities across trade hubs.</p>
+                        <Link to="/market" className="btn btn-secondary tool-btn">Open Market</Link>
+                    </div>
+
+                    <div className="tool-card glass-panel">
+                        <div className="tool-header">
+                            <h3 className="tool-title text-primary">Virtual Planet</h3>
+                            <span className="tool-icon">🌍</span>
+                        </div>
+                        <p className="tool-desc text-muted">Simulate planetary extractions and factory setups before committing in-game.</p>
+                        <div className="tool-footer">
+                            <span className="login-note text-accent">🔒 EVE Sign-in Required</span>
+                            <Link to="/virtual-planet" className="btn btn-secondary tool-btn">Launch Simulator</Link>
+                        </div>
+                    </div>
+
+                    <div className="tool-card glass-panel">
+                        <div className="tool-header">
+                            <h3 className="tool-title text-primary">Production Vs</h3>
+                            <span className="tool-icon">⚖️</span>
+                        </div>
+                        <p className="tool-desc text-muted">Compare two production chains side-by-side to determine the optimal path.</p>
+                        <Link to="/production-vs" className="btn btn-secondary tool-btn">Compare Chains</Link>
+                    </div>
+
+                    <div className="tool-card glass-panel">
+                        <div className="tool-header">
+                            <h3 className="tool-title text-primary">Command Center</h3>
+                            <span className="tool-icon">📡</span>
+                        </div>
+                        <p className="tool-desc text-muted">Manage all your planetary colonies from a single unified dashboard.</p>
+                        <div className="tool-footer">
+                            <span className="login-note text-accent">🔒 EVE Sign-in Required</span>
+                            <Link to="/command-center" className="btn btn-secondary tool-btn">Access Command</Link>
+                        </div>
+                    </div>
+
+                    <div className="tool-card glass-panel">
+                        <div className="tool-header">
+                            <h3 className="tool-title text-primary">Planets</h3>
+                            <span className="tool-icon">🪐</span>
+                        </div>
+                        <p className="tool-desc text-muted">View detailed information on all planet types and their extractable resources.</p>
+                        <Link to="/planets" className="btn btn-secondary tool-btn">View Planets</Link>
+                    </div>
+
+                    <div className="tool-card glass-panel">
+                        <div className="tool-header">
+                            <h3 className="tool-title text-primary">PI Consultant</h3>
+                            <span className="tool-icon">🤖</span>
+                        </div>
+                        <p className="tool-desc text-muted">Get AI-driven advice on optimizing your planetary interaction setups and market trades.</p>
+                        <Link to="/consultant" className="btn btn-secondary tool-btn">Ask Consultant</Link>
+                    </div>
+                </div>
+            </div>
+
             <div className="features-section">
                 <h2 className="section-title text-main">Core Features</h2>
                 <div className="features-grid">
