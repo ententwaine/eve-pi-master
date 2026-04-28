@@ -236,27 +236,23 @@ const SchematicTree = ({ rootId, quantity = 1 }) => {
             
             {/* Aligned Accounting Summary Sidebars */}
             <div className="accounting-summary-container" style={{
-                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--space-md)',
                 minWidth: '280px',
                 width: '280px',
-                height: '100%' // Ensure it stretches to parent height
+                height: 'fit-content'
             }}>
                 {['P4', 'P3', 'P2', 'P1', 'P0'].map(tier => {
                     if (summaryByTier.sums[tier] === undefined) return null;
-                    const topPos = tierPositions[tier];
                     
                     return (
                         <div key={tier} className="glass-panel" style={{
-                            position: topPos !== undefined ? 'absolute' : 'relative',
-                            top: topPos !== undefined ? topPos : 'auto',
-                            right: 0,
                             width: '100%',
                             padding: 'var(--space-md)',
                             borderRadius: 'var(--radius-md)',
                             background: 'rgba(20, 22, 30, 0.9)',
                             border: `1px solid var(--color-tier-${tier.toLowerCase()})`,
-                            transition: 'top 0.3s ease',
-                            marginBottom: topPos !== undefined ? 0 : 'var(--space-md)'
                         }}>
                             <h4 style={{ margin: '0 0 var(--space-sm) 0', color: `var(--color-tier-${tier.toLowerCase()})`, borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
                                 {tier} Accounting
