@@ -123,6 +123,7 @@ const TopNav = () => {
                             <button className="btn btn-primary" style={{ padding: 'var(--space-xs) var(--space-sm)', fontSize: '0.85rem' }} onClick={login}>
                                 Log in with EVE Online
                             </button>
+                        )}
                     </div>
 
                     <div className="dropdown" style={{ marginLeft: 'var(--space-md)' }}>
