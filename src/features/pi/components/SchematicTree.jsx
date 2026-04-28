@@ -45,7 +45,7 @@ const TreeNode = ({ node, level = 0, prices }) => {
             position: 'relative'
         }}>
             {/* The Node Card */}
-            <div className={`glass-panel tier-${node.tier}`} style={{
+            <div className={`glass-panel tree-node-card tier-${node.tier}`} data-tier={node.tier} style={{
                 padding: 'var(--space-xs) var(--space-sm)',
                 borderRadius: 'var(--radius-sm)',
                 marginBottom: 'var(--space-md)',
@@ -134,6 +134,8 @@ const SchematicTree = ({ rootId, quantity = 1 }) => {
     const rootNode = useMemo(() => buildTree(rootId, quantity), [rootId, quantity]);
     const { selectedHub } = useTradeHub() || { selectedHub: { name: 'Jita', regionId: 10000002, systemId: 30000142 } }; // Fallback if no provider
     const [prices, setPrices] = useState({});
+    const treeContainerRef = React.useRef(null);
+    const [tierPositions, setTierPositions] = useState({});
 
     // Collect unique IDs from rootNode
     const uniqueIds = useMemo(() => {
@@ -171,59 +173,113 @@ const SchematicTree = ({ rootId, quantity = 1 }) => {
 
     // Calculate accounting summary
     const summaryByTier = useMemo(() => {
-        if (!rootNode) return {};
+        if (!rootNode) return { sums: {}, items: {} };
         const sums = {};
+        const items = {};
         const traverse = (node) => {
             const price = prices[node.id] || 0;
             const value = price * node.quantity;
             if (!sums[node.tier]) sums[node.tier] = 0;
             sums[node.tier] += value;
+            
+            if (!items[node.tier]) items[node.tier] = {};
+            if (!items[node.tier][node.id]) {
+                items[node.tier][node.id] = { name: node.name, quantity: 0, totalValue: 0 };
+            }
+            items[node.tier][node.id].quantity += node.quantity;
+            items[node.tier][node.id].totalValue += value;
+
             node.children.forEach(traverse);
         };
         traverse(rootNode);
-        return sums;
+        return { sums, items };
+    }, [rootNode, prices]);
+
+    // Track vertical positions of tiers for aligned summaries
+    useEffect(() => {
+        const updatePositions = () => {
+            if (!treeContainerRef.current) return;
+            const containerRect = treeContainerRef.current.getBoundingClientRect();
+            const cards = treeContainerRef.current.querySelectorAll('.tree-node-card');
+            
+            const positions = {};
+            cards.forEach(card => {
+                const tier = card.getAttribute('data-tier');
+                const rect = card.getBoundingClientRect();
+                const topPosition = rect.top - containerRect.top;
+                
+                if (positions[tier] === undefined || topPosition < positions[tier]) {
+                    positions[tier] = topPosition;
+                }
+            });
+            setTierPositions(positions);
+        };
+
+        // Small delay to allow layout to render first
+        const timeoutId = setTimeout(updatePositions, 100);
+        window.addEventListener('resize', updatePositions);
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', updatePositions);
+        };
     }, [rootNode, prices]);
 
     if (!rootNode) return null;
 
     return (
-        <div style={{ display: 'flex', gap: 'var(--space-xl)', overflowX: 'auto', padding: 'var(--space-lg)', minHeight: '300px' }}>
+        <div ref={treeContainerRef} style={{ display: 'flex', gap: 'var(--space-xl)', overflowX: 'auto', padding: 'var(--space-lg)', minHeight: '300px', position: 'relative' }}>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                 <div style={{ width: 'max-content' }}>
                     <TreeNode node={rootNode} prices={prices} />
                 </div>
             </div>
             
-            {/* Accounting Summary Sidebar */}
-            <div className="accounting-summary glass-panel" style={{
-                padding: 'var(--space-lg)',
-                borderRadius: 'var(--radius-md)',
-                minWidth: '250px',
-                height: 'fit-content',
-                position: 'sticky',
-                top: 0,
-                background: 'rgba(20, 22, 30, 0.9)',
-                border: '1px solid var(--color-border)'
+            {/* Aligned Accounting Summary Sidebars */}
+            <div className="accounting-summary-container" style={{
+                position: 'relative',
+                minWidth: '280px',
+                width: '280px',
+                height: '100%' // Ensure it stretches to parent height
             }}>
-                <h3 style={{ marginTop: 0, marginBottom: 'var(--space-md)', color: 'var(--color-text-main)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-sm)' }}>
-                    Accounting Summary
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-                    {['P0', 'P1', 'P2', 'P3', 'P4'].map(tier => {
-                        if (summaryByTier[tier] === undefined) return null;
-                        return (
-                            <div key={tier} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: `var(--color-tier-${tier.toLowerCase()})`, fontWeight: 'bold' }}>{tier} Total:</span>
-                                <span style={{ color: 'var(--color-text-main)', fontFamily: 'monospace' }}>
-                                    {formatISK(summaryByTier[tier])}
+                {['P4', 'P3', 'P2', 'P1', 'P0'].map(tier => {
+                    if (summaryByTier.sums[tier] === undefined) return null;
+                    const topPos = tierPositions[tier];
+                    
+                    return (
+                        <div key={tier} className="glass-panel" style={{
+                            position: topPos !== undefined ? 'absolute' : 'relative',
+                            top: topPos !== undefined ? topPos : 'auto',
+                            right: 0,
+                            width: '100%',
+                            padding: 'var(--space-md)',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'rgba(20, 22, 30, 0.9)',
+                            border: `1px solid var(--color-tier-${tier.toLowerCase()})`,
+                            transition: 'top 0.3s ease',
+                            marginBottom: topPos !== undefined ? 0 : 'var(--space-md)'
+                        }}>
+                            <h4 style={{ margin: '0 0 var(--space-sm) 0', color: `var(--color-tier-${tier.toLowerCase()})`, borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
+                                {tier} Accounting
+                            </h4>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                                {Object.values(summaryByTier.items[tier] || {}).map(item => (
+                                    <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                        <span>{item.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })}x {item.name}</span>
+                                        <span>{formatISK(item.totalValue)}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' }}>
+                                <span style={{ color: `var(--color-tier-${tier.toLowerCase()})`, fontWeight: 'bold', fontSize: '0.9rem' }}>Total:</span>
+                                <span style={{ color: 'var(--color-text-main)', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                                    {formatISK(summaryByTier.sums[tier])}
                                 </span>
                             </div>
-                        );
-                    })}
-                </div>
-                <div style={{ marginTop: 'var(--space-md)', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                    * Values based on {selectedHub?.name || 'hub'} sell orders.
-                </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
