@@ -123,7 +123,7 @@ export const commodities = [
     { id: 17136, name: "Ukomi Superconductors", tier: "P3", inputs: [{ id: 3691, quantity: 10 }, { id: 9838, quantity: 10 }], outputYield: 6 },
     { id: 28974, name: "Vaccines", tier: "P3", inputs: [{ id: 3725, quantity: 10 }, { id: 3775, quantity: 10 }], outputYield: 6 },
     { id: 2867, name: "Broadcast Node", tier: "P4", inputs: [{ id: 17392, quantity: 6 }, { id: 17898, quantity: 6 }, { id: 2354, quantity: 6 }], outputYield: 1 },
-    { id: 2868, name: "Integrity Response Drones", tier: "P4", inputs: [{ id: 2348, quantity: 6 }, { id: 2366, quantity: 6 }, { id: 2354, quantity: 6 }], outputYield: 1 },
+    { id: 2868, name: "Integrity Response Drones", tier: "P4", inputs: [{ id: 2348, quantity: 6 }, { id: 2366, quantity: 6 }, { id: 9846, quantity: 6 }], outputYield: 1 },
     { id: 2869, name: "Nano-Factory", tier: "P4", inputs: [{ id: 2360, quantity: 6 }, { id: 9848, quantity: 6 }, { id: 17136, quantity: 6 }], outputYield: 1 },
     { id: 2870, name: "Organic Mortar Applicators", tier: "P4", inputs: [{ id: 2344, quantity: 6 }, { id: 2393, quantity: 40 }, { id: 9848, quantity: 6 }], outputYield: 1 },
     { id: 2871, name: "Recursive Computing Module", tier: "P4", inputs: [{ id: 2358, quantity: 6 }, { id: 9834, quantity: 6 }, { id: 2346, quantity: 6 }], outputYield: 1 },
