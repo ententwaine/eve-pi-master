@@ -266,14 +266,14 @@ const SchematicTree = ({ rootId, quantity = 1 }) => {
                                 {Object.values(summaryByTier.items[tier] || {}).map(item => (
                                     <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                                         <span>{item.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })}x {item.name}</span>
-                                        <span>{formatISK(item.totalValue)}</span>
+                                        <span style={{ whiteSpace: 'nowrap', marginLeft: '8px' }}>{formatISK(item.totalValue)}</span>
                                     </div>
                                 ))}
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' }}>
-                                <span style={{ color: `var(--color-tier-${tier.toLowerCase()})`, fontWeight: 'bold', fontSize: '0.9rem' }}>Total:</span>
-                                <span style={{ color: 'var(--color-text-main)', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                                <span style={{ color: `var(--color-tier-${tier.toLowerCase()})`, fontWeight: 'bold', fontSize: '0.9rem' }}>{tier} Total:</span>
+                                <span style={{ color: 'var(--color-text-main)', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', marginLeft: '8px' }}>
                                     {formatISK(summaryByTier.sums[tier])}
                                 </span>
                             </div>
