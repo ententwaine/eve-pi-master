@@ -300,6 +300,13 @@ body {
     justify-content: space-between;
     align-items: center;
   }
+
+  .dropdown {
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    width: 100%;
+  }
   
   .dropdown:hover .dropdown-content {
     display: none;
