@@ -47,22 +47,78 @@ const TreeNode = ({ node, level = 0, prices }) => {
     return (
         <div className="tree-node" style={{
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'row',
             alignItems: 'center',
-            margin: '0 var(--space-xs)',
+            margin: 'var(--space-xs) 0',
             position: 'relative'
         }}>
-            {/* The Node Card */}
+            {/* Children Container (LEFT) */}
+            {!isLeaf && (
+                <div className="children-container" style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    gap: 'var(--space-md)',
+                    position: 'relative',
+                    paddingRight: 'var(--space-md)'
+                }}>
+                    {node.children.map((child, idx) => (
+                        <div key={child.id + '-' + idx} className="tree-branch" style={{ position: 'relative' }}>
+                            {/* Horizontal Line Right to Parent */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '50%',
+                                right: '-16px',
+                                width: '16px',
+                                height: '1px',
+                                background: 'var(--color-border)',
+                                zIndex: 1
+                            }}></div>
+
+                            {/* Vertical Line for Siblings */}
+                            {node.children.length > 1 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    right: '-16px',
+                                    top: idx === 0 ? '50%' : 0,
+                                    bottom: idx === node.children.length - 1 ? '50%' : 'calc(0px - var(--space-md))',
+                                    width: '1px',
+                                    background: 'var(--color-border)',
+                                    zIndex: 0
+                                }}></div>
+                            )}
+
+                            <TreeNode node={child} level={level + 1} prices={prices} />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* The Node Card (RIGHT) */}
             <div className={`glass-panel tree-node-card tier-${node.tier}`} data-tier={node.tier} style={{
                 padding: 'var(--space-xs) var(--space-sm)',
                 borderRadius: 'var(--radius-sm)',
-                marginBottom: 'var(--space-md)',
+                marginLeft: !isLeaf ? 'var(--space-md)' : '0',
                 border: `1px solid var(--color-tier-${node.tier?.toLowerCase() || 'p0'})`,
                 background: 'rgba(20, 22, 30, 0.8)',
                 zIndex: 2,
                 minWidth: '120px',
-                textAlign: 'center'
+                textAlign: 'center',
+                position: 'relative'
             }}>
+                {/* Connecting Line Left to Sibling Line */}
+                {!isLeaf && (
+                    <div className="lines" style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '-16px',
+                        width: '16px',
+                        height: '1px',
+                        background: 'var(--color-border)',
+                        zIndex: 1
+                    }}></div>
+                )}
+                
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-xs)', marginBottom: '4px' }}>
                     <img 
                         src={`https://images.evetech.net/types/${node.id}/icon?size=32`} 
@@ -80,59 +136,6 @@ const TreeNode = ({ node, level = 0, prices }) => {
                     {prices[node.id] === undefined ? '...' : formatISK(totalValue)}
                 </div>
             </div>
-
-            {/* Connecting Lines (CSS) */}
-            {!isLeaf && (
-                <div className="lines" style={{
-                    position: 'absolute',
-                    top: '70px', // Below the card (adjusted for extra height)
-                    bottom: 0,
-                    left: '50%',
-                    width: '1px',
-                    height: 'var(--space-md)',
-                    background: 'var(--color-border)',
-                }}></div>
-            )}
-
-            {/* Children Container */}
-            {!isLeaf && (
-                <div className="children-container" style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    gap: 'var(--space-md)',
-                    position: 'relative',
-                    paddingTop: 'var(--space-md)'
-                }}>
-                    {node.children.map((child, idx) => (
-                        <div key={child.id + '-' + idx} className="tree-branch" style={{ position: 'relative' }}>
-                            {/* Vertical Line Up to Parent */}
-                            <div style={{
-                                position: 'absolute',
-                                top: '-16px', // Align with parent padding
-                                left: '50%',
-                                width: '1px',
-                                height: '16px',
-                                background: 'var(--color-border)'
-                            }}></div>
-
-                            {/* Horizontal Line for Siblings */}
-                            {node.children.length > 1 && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '-16px',
-                                    left: idx === 0 ? '50%' : 0,
-                                    right: idx === node.children.length - 1 ? '50%' : 0,
-                                    height: '1px',
-                                    background: 'var(--color-border)'
-                                }}></div>
-                            )}
-
-                            <TreeNode node={child} level={level + 1} prices={prices} />
-                        </div>
-                    ))}
-                </div>
-            )}
         </div>
     );
 };
@@ -250,8 +253,8 @@ const SchematicTree = ({ rootId, quantity = 1, onSummaryCalculated }) => {
 
     return (
         <div ref={treeContainerRef} style={{ display: 'flex', gap: 'var(--space-xl)', overflowX: 'auto', padding: 'var(--space-lg)', minHeight: '300px', position: 'relative' }}>
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                <div style={{ width: 'max-content' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <div style={{ width: 'max-content', margin: 'auto' }}>
                     <TreeNode node={rootNode} prices={prices} />
                 </div>
             </div>
