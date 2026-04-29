@@ -49,7 +49,7 @@ const TreeNode = ({ node, level = 0, prices }) => {
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
-            margin: 'var(--space-xs) 0',
+            margin: '4px 0',
             position: 'relative'
         }}>
             {/* Children Container (LEFT) */}
@@ -58,9 +58,9 @@ const TreeNode = ({ node, level = 0, prices }) => {
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
-                    gap: 'var(--space-md)',
+                    gap: '8px',
                     position: 'relative',
-                    paddingRight: 'var(--space-md)'
+                    paddingRight: '12px'
                 }}>
                     {node.children.map((child, idx) => (
                         <div key={child.id + '-' + idx} className="tree-branch" style={{ position: 'relative' }}>
@@ -68,8 +68,8 @@ const TreeNode = ({ node, level = 0, prices }) => {
                             <div style={{
                                 position: 'absolute',
                                 top: '50%',
-                                right: '-16px',
-                                width: '16px',
+                                right: '-12px',
+                                width: '12px',
                                 height: '1px',
                                 background: 'var(--color-border)',
                                 zIndex: 1
@@ -79,9 +79,9 @@ const TreeNode = ({ node, level = 0, prices }) => {
                             {node.children.length > 1 && (
                                 <div style={{
                                     position: 'absolute',
-                                    right: '-16px',
+                                    right: '-12px',
                                     top: idx === 0 ? '50%' : 0,
-                                    bottom: idx === node.children.length - 1 ? '50%' : 'calc(0px - var(--space-md))',
+                                    bottom: idx === node.children.length - 1 ? '50%' : '-8px',
                                     width: '1px',
                                     background: 'var(--color-border)',
                                     zIndex: 0
@@ -96,14 +96,13 @@ const TreeNode = ({ node, level = 0, prices }) => {
 
             {/* The Node Card (RIGHT) */}
             <div className={`glass-panel tree-node-card tier-${node.tier}`} data-tier={node.tier} style={{
-                padding: 'var(--space-xs) var(--space-sm)',
+                padding: '4px 8px',
                 borderRadius: 'var(--radius-sm)',
-                marginLeft: !isLeaf ? 'var(--space-md)' : '0',
+                marginLeft: !isLeaf ? '12px' : '0',
                 border: `1px solid var(--color-tier-${node.tier?.toLowerCase() || 'p0'})`,
                 background: 'rgba(20, 22, 30, 0.8)',
                 zIndex: 2,
-                minWidth: '120px',
-                textAlign: 'center',
+                whiteSpace: 'nowrap',
                 position: 'relative'
             }}>
                 {/* Connecting Line Left to Sibling Line */}
@@ -111,29 +110,34 @@ const TreeNode = ({ node, level = 0, prices }) => {
                     <div className="lines" style={{
                         position: 'absolute',
                         top: '50%',
-                        left: '-16px',
-                        width: '16px',
+                        left: '-12px',
+                        width: '12px',
                         height: '1px',
                         background: 'var(--color-border)',
                         zIndex: 1
                     }}></div>
                 )}
                 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-xs)', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <img 
                         src={`https://images.evetech.net/types/${node.id}/icon?size=32`} 
                         alt={node.name} 
-                        style={{ width: '24px', height: '24px', borderRadius: '4px' }}
+                        style={{ width: '20px', height: '20px', borderRadius: '4px' }}
                     />
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{node.tier}</div>
-                </div>
-                <div style={{ fontWeight: 'bold', color: 'var(--color-text-main)' }}>{node.name}</div>
-                <div style={{ color: 'var(--color-primary)', fontSize: '0.9rem', marginTop: '2px' }}>
-                    x{node.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-                {/* ISK Value */}
-                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: '4px' }}>
-                    {prices[node.id] === undefined ? '...' : formatISK(totalValue)}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                            <span style={{ fontWeight: 'bold', color: 'var(--color-text-main)', fontSize: '0.8rem' }}>{node.name}</span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>({node.tier})</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                            <span style={{ color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                x{node.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </span>
+                            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.7rem' }}>
+                                {prices[node.id] === undefined ? '...' : formatISK(totalValue)}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
