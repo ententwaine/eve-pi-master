@@ -403,33 +403,71 @@ const PlannerPage = () => {
                                 <div style={{ display: 'flex', gap: 'var(--space-lg)' }}>
                                     <div style={{ flex: 1 }}>
                                         <label className="text-muted" style={{ display: 'block', marginBottom: '4px' }}>Importing Commodities:</label>
-                                        <select 
-                                            multiple 
-                                            value={config.imports || []}
-                                            onChange={(e) => updatePlanetConfig(planet.name, 'imports', Array.from(e.target.selectedOptions, option => option.value))}
-                                            style={{ width: '100%', height: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', padding: '4px' }}
-                                        >
-                                            {flatBomItems.map(item => (
-                                                <option key={item.id} value={item.id} disabled={getDisabledStatus(planet.name, item.id, 'imports')}>
-                                                    {item.name} ({item.quantity.toLocaleString()})
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <div style={{ width: '100%', height: '100px', overflowY: 'auto', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            {flatBomItems.map(item => {
+                                                const isSelected = (config.imports || []).includes(String(item.id));
+                                                const isDisabled = getDisabledStatus(planet.name, item.id, 'imports');
+                                                return (
+                                                    <div 
+                                                        key={item.id} 
+                                                        onClick={() => {
+                                                            if (isDisabled) return;
+                                                            const current = config.imports || [];
+                                                            const newImports = isSelected ? current.filter(id => id !== String(item.id)) : [...current, String(item.id)];
+                                                            updatePlanetConfig(planet.name, 'imports', newImports);
+                                                        }}
+                                                        style={{
+                                                            padding: '2px 6px',
+                                                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                                            background: isSelected ? 'var(--color-primary)' : 'transparent',
+                                                            color: isSelected ? '#000' : (isDisabled ? 'rgba(255,255,255,0.3)' : 'white'),
+                                                            borderRadius: '2px',
+                                                            textDecoration: isDisabled ? 'line-through' : 'none',
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            fontSize: '0.85rem'
+                                                        }}
+                                                    >
+                                                        <span>{item.name}</span>
+                                                        <span>{item.quantity.toLocaleString()}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <label className="text-muted" style={{ display: 'block', marginBottom: '4px' }}>Exporting Commodities:</label>
-                                        <select 
-                                            multiple 
-                                            value={config.exports || []}
-                                            onChange={(e) => updatePlanetConfig(planet.name, 'exports', Array.from(e.target.selectedOptions, option => option.value))}
-                                            style={{ width: '100%', height: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', padding: '4px' }}
-                                        >
-                                            {flatBomItems.map(item => (
-                                                <option key={item.id} value={item.id} disabled={getDisabledStatus(planet.name, item.id, 'exports')}>
-                                                    {item.name} ({item.quantity.toLocaleString()})
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <div style={{ width: '100%', height: '100px', overflowY: 'auto', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            {flatBomItems.map(item => {
+                                                const isSelected = (config.exports || []).includes(String(item.id));
+                                                const isDisabled = getDisabledStatus(planet.name, item.id, 'exports');
+                                                return (
+                                                    <div 
+                                                        key={item.id} 
+                                                        onClick={() => {
+                                                            if (isDisabled) return;
+                                                            const current = config.exports || [];
+                                                            const newExports = isSelected ? current.filter(id => id !== String(item.id)) : [...current, String(item.id)];
+                                                            updatePlanetConfig(planet.name, 'exports', newExports);
+                                                        }}
+                                                        style={{
+                                                            padding: '2px 6px',
+                                                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                                            background: isSelected ? 'var(--color-primary)' : 'transparent',
+                                                            color: isSelected ? '#000' : (isDisabled ? 'rgba(255,255,255,0.3)' : 'white'),
+                                                            borderRadius: '2px',
+                                                            textDecoration: isDisabled ? 'line-through' : 'none',
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            fontSize: '0.85rem'
+                                                        }}
+                                                    >
+                                                        <span>{item.name}</span>
+                                                        <span>{item.quantity.toLocaleString()}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
