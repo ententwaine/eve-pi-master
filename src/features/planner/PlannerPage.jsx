@@ -204,6 +204,20 @@ const PlannerPage = () => {
         }));
     };
 
+
+    const getDisabledStatus = (planetName, itemId, type) => {
+        if (!selectedSystem) return false;
+        for (const p of selectedSystem.planets) {
+            if (p.name !== planetName) {
+                const config = planetConfigs[p.name] || {};
+                if ((config[type] || []).includes(String(itemId))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
     return (
         <div>
             <header style={{ marginBottom: 'var(--space-lg)' }}>
@@ -391,25 +405,14 @@ const PlannerPage = () => {
                                         <label className="text-muted" style={{ display: 'block', marginBottom: '4px' }}>Importing Commodities:</label>
                                         <select 
                                             multiple 
-                                            value={config.imports || []}
-                                            onChange={(e) => updatePlanetConfig(planet.name, 'imports', Array.from(e.target.selectedOptions, option => option.value))}
-                                            style={{ width: '100%', height: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', padding: '4px' }}
-                                        >
-                                            {flatBomItems.map(item => (
-                                                <option key={item.id} value={item.id}>{item.name} ({item.quantity.toLocaleString()})</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <label className="text-muted" style={{ display: 'block', marginBottom: '4px' }}>Exporting Commodities:</label>
-                                        <select 
-                                            multiple 
                                             value={config.exports || []}
                                             onChange={(e) => updatePlanetConfig(planet.name, 'exports', Array.from(e.target.selectedOptions, option => option.value))}
                                             style={{ width: '100%', height: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', padding: '4px' }}
                                         >
                                             {flatBomItems.map(item => (
-                                                <option key={item.id} value={item.id}>{item.name} ({item.quantity.toLocaleString()})</option>
+                                                <option key={item.id} value={item.id} disabled={getDisabledStatus(planet.name, item.id, 'exports')}>
+                                                    {item.name} ({item.quantity.toLocaleString()})
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
@@ -482,6 +485,31 @@ const PlannerPage = () => {
                                     return (
                                         <>
                                             {rows}
+                                            
+                                            {Object.entries(planetConfigs).map(([planetName, config]) => {
+                                                let planetTax = 0;
+                                                const rate = (config.taxRate ?? 10) / 100;
+                                                (config.imports || []).forEach(itemId => {
+                                                    const item = flatBomItems.find(i => i.id === Number(itemId));
+                                                    if (item) planetTax += item.quantity * (PI_BASE_VALUES[item.tier] || 0) * 0.5 * rate;
+                                                });
+                                                (config.exports || []).forEach(itemId => {
+                                                    const item = flatBomItems.find(i => i.id === Number(itemId));
+                                                    if (item) planetTax += item.quantity * (PI_BASE_VALUES[item.tier] || 0) * rate;
+                                                });
+                                                if (planetTax > 0) {
+                                                    return (
+                                                        <tr key={`tax-${planetName}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.9rem' }}>
+                                                            <td colSpan={4} style={{ padding: 'var(--space-xs) var(--space-sm)', textAlign: 'right', color: 'var(--color-text-muted)' }}>
+                                                                ↳ {planetName} POCO Tax ({config.taxRate ?? 10}%):
+                                                            </td>
+                                                            <td style={{ padding: 'var(--space-xs) var(--space-sm)', color: 'var(--color-danger)' }}>{formatTotal(planetTax)}</td>
+                                                            <td style={{ padding: 'var(--space-xs) var(--space-sm)' }}></td>
+                                                        </tr>
+                                                    );
+                                                }
+                                                return null;
+                                            })}
                                             <tr style={{ background: 'rgba(255,255,255,0.05)', fontWeight: 'bold', borderTop: '2px solid var(--color-border)' }}>
                                                 <td colSpan={2} style={{ padding: 'var(--space-md)', textAlign: 'right' }}>GRAND TOTAL:</td>
                                                 <td style={{ padding: 'var(--space-md)', color: 'var(--color-primary)' }}>{formatTotal(totalRevenue)}</td>
