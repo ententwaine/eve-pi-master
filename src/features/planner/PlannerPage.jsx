@@ -418,7 +418,7 @@ const PlannerPage = () => {
                                                             fontSize: '0.85rem'
                                                         }}
                                                     >
-                                                        <span>{item.name} {isDisabled && <span style={{fontSize:'0.7rem'}}>(On other planet)</span>}</span>
+                                                        <span>{item.name}</span>
                                                         <span>{item.quantity.toLocaleString()}</span>
                                                     </div>
                                                 );
@@ -450,7 +450,7 @@ const PlannerPage = () => {
                                                             fontSize: '0.85rem'
                                                         }}
                                                     >
-                                                        <span>{item.name} {isDisabled && <span style={{fontSize:'0.7rem'}}>(On other planet)</span>}</span>
+                                                        <span>{item.name}</span>
                                                         <span>{item.quantity.toLocaleString()}</span>
                                                     </div>
                                                 );
