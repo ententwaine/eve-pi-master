@@ -256,7 +256,7 @@ const PlannerPage = () => {
                                 <div 
                                     key={s.name} 
                                     onClick={() => { setSystemSearch(s.name); setSelectedSystem(s); }}
-                                    style={{ padding: 'var(--space-sm)', cursor: isDisabled ? 'not-allowed' : 'pointer', borderBottom: '1px solid var(--color-border)' }}
+                                    style={{ padding: 'var(--space-sm)', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}
                                 >
                                     {s.name} ({s.security.toFixed(1)})
                                 </div>
@@ -317,7 +317,7 @@ const PlannerPage = () => {
                                 <div 
                                     key={c.id} 
                                     onClick={() => handleAddProduct(c)}
-                                    style={{ padding: 'var(--space-sm)', cursor: isDisabled ? 'not-allowed' : 'pointer', borderBottom: '1px solid var(--color-border)' }}
+                                    style={{ padding: 'var(--space-sm)', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}
                                 >
                                     {c.name} <span className="text-muted">({c.tier})</span>
                                 </div>
@@ -353,7 +353,7 @@ const PlannerPage = () => {
                                         </div>
                                         <button 
                                             onClick={() => handleRemoveProduct(p.id)}
-                                            style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: isDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                                            style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontWeight: 'bold' }}
                                         >
                                             Remove
                                         </button>
