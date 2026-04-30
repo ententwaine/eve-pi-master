@@ -16,6 +16,26 @@ const VOLUMES = {
     'P4': 100.0
 };
 
+const formatTime = (tier, quantity) => {
+    if (tier === 'P0' || !quantity) return '';
+    let cycleMinutes = 60;
+    let batchSize = 1;
+    if (tier === 'P1') { cycleMinutes = 30; batchSize = 20; }
+    else if (tier === 'P2') { cycleMinutes = 60; batchSize = 5; }
+    else if (tier === 'P3') { cycleMinutes = 60; batchSize = 3; }
+    else if (tier === 'P4') { cycleMinutes = 60; batchSize = 1; }
+    
+    const totalMinutes = Math.round((quantity / batchSize) * cycleMinutes);
+    if (totalMinutes === 0) return '';
+    if (totalMinutes < 60) return ` / ${totalMinutes}m`;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours < 24) return ` / ${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    return ` / ${days}d${remHours > 0 ? ` ${remHours}h` : ''}`;
+};
+
 // --- Recursive Tree Builder ---
 const buildTree = (itemId, quantity = 1) => {
     const item = commodities.find(c => c.id === Number(itemId));
@@ -134,7 +154,7 @@ const TreeNode = ({ node, level = 0, prices }) => {
                                 x{node.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </span>
                             <span style={{ color: 'var(--color-text-muted)', fontSize: '0.7rem' }}>
-                                {prices[node.id] === undefined ? '...' : formatISK(totalValue)}
+                                {prices[node.id] === undefined ? '...' : formatISK(totalValue)}{formatTime(node.tier, node.quantity)}
                             </span>
                         </div>
                     </div>
