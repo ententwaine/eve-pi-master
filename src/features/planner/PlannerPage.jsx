@@ -405,6 +405,21 @@ const PlannerPage = () => {
                                         <label className="text-muted" style={{ display: 'block', marginBottom: '4px' }}>Importing Commodities:</label>
                                         <select 
                                             multiple 
+                                            value={config.imports || []}
+                                            onChange={(e) => updatePlanetConfig(planet.name, 'imports', Array.from(e.target.selectedOptions, option => option.value))}
+                                            style={{ width: '100%', height: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', padding: '4px' }}
+                                        >
+                                            {flatBomItems.map(item => (
+                                                <option key={item.id} value={item.id} disabled={getDisabledStatus(planet.name, item.id, 'imports')}>
+                                                    {item.name} ({item.quantity.toLocaleString()})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label className="text-muted" style={{ display: 'block', marginBottom: '4px' }}>Exporting Commodities:</label>
+                                        <select 
+                                            multiple 
                                             value={config.exports || []}
                                             onChange={(e) => updatePlanetConfig(planet.name, 'exports', Array.from(e.target.selectedOptions, option => option.value))}
                                             style={{ width: '100%', height: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', padding: '4px' }}
