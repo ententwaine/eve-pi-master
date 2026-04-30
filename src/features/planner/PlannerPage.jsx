@@ -207,6 +207,20 @@ const PlannerPage = () => {
 
     
 
+
+    const getDisabledStatus = (planetName, itemId, type) => {
+        if (!selectedSystem) return false;
+        for (const p of selectedSystem.planets) {
+            if (p.name !== planetName) {
+                const config = planetConfigs[p.name] || {};
+                if ((config[type] || []).includes(String(itemId))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
     return (
         <div>
             <header style={{ marginBottom: 'var(--space-lg)' }}>
@@ -242,7 +256,7 @@ const PlannerPage = () => {
                                 <div 
                                     key={s.name} 
                                     onClick={() => { setSystemSearch(s.name); setSelectedSystem(s); }}
-                                    style={{ padding: 'var(--space-sm)', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}
+                                    style={{ padding: 'var(--space-sm)', cursor: isDisabled ? 'not-allowed' : 'pointer', borderBottom: '1px solid var(--color-border)' }}
                                 >
                                     {s.name} ({s.security.toFixed(1)})
                                 </div>
@@ -303,7 +317,7 @@ const PlannerPage = () => {
                                 <div 
                                     key={c.id} 
                                     onClick={() => handleAddProduct(c)}
-                                    style={{ padding: 'var(--space-sm)', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}
+                                    style={{ padding: 'var(--space-sm)', cursor: isDisabled ? 'not-allowed' : 'pointer', borderBottom: '1px solid var(--color-border)' }}
                                 >
                                     {c.name} <span className="text-muted">({c.tier})</span>
                                 </div>
@@ -339,7 +353,7 @@ const PlannerPage = () => {
                                         </div>
                                         <button 
                                             onClick={() => handleRemoveProduct(p.id)}
-                                            style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontWeight: 'bold' }}
+                                            style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: isDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
                                         >
                                             Remove
                                         </button>
@@ -395,27 +409,29 @@ const PlannerPage = () => {
                                         <div style={{ width: '100%', height: '100px', overflowY: 'auto', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                             {flatBomItems.map(item => {
                                                 const isSelected = (config.imports || []).includes(String(item.id));
+                                                const isDisabled = getDisabledStatus(planet.name, item.id, 'imports');
                                                 return (
                                                     <div 
                                                         key={item.id} 
                                                         onClick={() => {
+                                                            if (isDisabled) return;
                                                             const current = config.imports || [];
                                                             const newImports = isSelected ? current.filter(id => id !== String(item.id)) : [...current, String(item.id)];
                                                             updatePlanetConfig(planet.name, 'imports', newImports);
                                                         }}
                                                         style={{
                                                             padding: '2px 6px',
-                                                            cursor: 'pointer',
+                                                            cursor: isDisabled ? 'not-allowed' : 'pointer',
                                                             background: isSelected ? 'var(--color-primary)' : 'transparent',
-                                                            color: isSelected ? '#000' : 'white',
+                                                            color: isSelected ? '#000' : (isDisabled ? 'rgba(255,255,255,0.3)' : 'white'),
                                                             borderRadius: '2px',
-                                                            textDecoration: 'none',
+                                                            textDecoration: isDisabled ? 'line-through' : 'none',
                                                             display: 'flex',
                                                             justifyContent: 'space-between',
                                                             fontSize: '0.85rem'
                                                         }}
                                                     >
-                                                        <span>{item.name}</span>
+                                                        <span>{item.name} {isDisabled && <span style={{fontSize:'0.7rem'}}>(On other planet)</span>}</span>
                                                         <span>{item.quantity.toLocaleString()}</span>
                                                     </div>
                                                 );
@@ -427,27 +443,29 @@ const PlannerPage = () => {
                                         <div style={{ width: '100%', height: '100px', overflowY: 'auto', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                             {flatBomItems.map(item => {
                                                 const isSelected = (config.exports || []).includes(String(item.id));
+                                                const isDisabled = getDisabledStatus(planet.name, item.id, 'exports');
                                                 return (
                                                     <div 
                                                         key={item.id} 
                                                         onClick={() => {
+                                                            if (isDisabled) return;
                                                             const current = config.exports || [];
                                                             const newExports = isSelected ? current.filter(id => id !== String(item.id)) : [...current, String(item.id)];
                                                             updatePlanetConfig(planet.name, 'exports', newExports);
                                                         }}
                                                         style={{
                                                             padding: '2px 6px',
-                                                            cursor: 'pointer',
+                                                            cursor: isDisabled ? 'not-allowed' : 'pointer',
                                                             background: isSelected ? 'var(--color-primary)' : 'transparent',
-                                                            color: isSelected ? '#000' : 'white',
+                                                            color: isSelected ? '#000' : (isDisabled ? 'rgba(255,255,255,0.3)' : 'white'),
                                                             borderRadius: '2px',
-                                                            textDecoration: 'none',
+                                                            textDecoration: isDisabled ? 'line-through' : 'none',
                                                             display: 'flex',
                                                             justifyContent: 'space-between',
                                                             fontSize: '0.85rem'
                                                         }}
                                                     >
-                                                        <span>{item.name}</span>
+                                                        <span>{item.name} {isDisabled && <span style={{fontSize:'0.7rem'}}>(On other planet)</span>}</span>
                                                         <span>{item.quantity.toLocaleString()}</span>
                                                     </div>
                                                 );
