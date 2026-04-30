@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTradeHub } from '../../context/TradeHubContext';
-import { mockSystems, extractablePlanetsMap } from '../../data/system_mock_data';
+import { extractablePlanetsMap } from '../../data/system_mock_data';
+import systemsData from '../../data/systems_with_planets.json';
 import { commodities, RESOURCE_TO_PLANETS } from '../../data/pi_data';
 import SchematicTree from '../pi/components/SchematicTree';
 import PlanetBreakdown from '../pi/components/PlanetBreakdown';
@@ -15,12 +16,21 @@ const PlannerPage = () => {
     const [productSearch, setProductSearch] = useState('');
     const [productPrices, setProductPrices] = useState({});
     const [targetQuantities, setTargetQuantities] = useState({});
+    const [planetConfigs, setPlanetConfigs] = useState({});
 
-    const filteredSystems = mockSystems.filter(s => s.name.toLowerCase().includes(systemSearch.toLowerCase()));
+    const PI_BASE_VALUES = {
+        'P0': 5,
+        'P1': 400,
+        'P2': 7200,
+        'P3': 60000,
+        'P4': 1200000
+    };
+
+    const filteredSystems = systemsData.filter(s => s.name.toLowerCase().includes(systemSearch.toLowerCase())).slice(0, 20);
     
     // Auto-select system if exactly matched
     useEffect(() => {
-        const exactMatch = mockSystems.find(s => s.name.toLowerCase() === systemSearch.toLowerCase());
+        const exactMatch = systemsData.find(s => s.name.toLowerCase() === systemSearch.toLowerCase());
         if (exactMatch && (!selectedSystem || selectedSystem.name !== exactMatch.name)) {
             setSelectedSystem(exactMatch);
         } else if (systemSearch === '') {
@@ -113,6 +123,87 @@ const PlannerPage = () => {
         setTargetQuantities(prev => ({ ...prev, [productId]: Math.max(1, qty) }));
     };
 
+
+    const { globalBom, flatBomItems } = React.useMemo(() => {
+        const bom = { P4: {}, P3: {}, P2: {}, P1: {}, P0: {} };
+        const flatItems = [];
+        
+        const traverseGlobal = (itemId, qtyNeeded) => {
+            const item = commodities.find(c => c.id === Number(itemId));
+            if (!item) return;
+            
+            const tier = item.tier;
+            if (bom[tier]) {
+                bom[tier][itemId] = (bom[tier][itemId] || 0) + qtyNeeded;
+            }
+            
+            if (tier === 'P0') return;
+            
+            const batches = qtyNeeded / (item.outputYield || 1);
+            for (const input of item.inputs) {
+                traverseGlobal(input.id, input.quantity * batches);
+            }
+        };
+        
+        selectedProducts.forEach(p => {
+            const targetQty = targetQuantities[p.id] || 1;
+            // First add the target product itself
+            if (bom[p.tier]) {
+                bom[p.tier][p.id] = (bom[p.tier][p.id] || 0) + targetQty;
+            }
+            const batches = targetQty / (p.outputYield || 1);
+            for (const input of p.inputs) {
+                traverseGlobal(input.id, input.quantity * batches);
+            }
+        });
+
+        ['P4', 'P3', 'P2', 'P1', 'P0'].forEach(tier => {
+            Object.entries(bom[tier]).forEach(([id, qty]) => {
+                const item = commodities.find(c => c.id === Number(id));
+                if (item) flatItems.push({ id: item.id, name: item.name, tier: item.tier, quantity: qty });
+            });
+        });
+        
+        return { globalBom: bom, flatBomItems: flatItems };
+    }, [selectedProducts, targetQuantities]);
+
+    const totalPocoTax = React.useMemo(() => {
+        if (!selectedSystem || !flatBomItems.length) return 0;
+        
+        let tax = 0;
+        selectedSystem.planets.forEach(planet => {
+            const config = planetConfigs[planet.name];
+            if (!config) return;
+            
+            const rate = (config.taxRate ?? 10) / 100;
+            
+            (config.imports || []).forEach(itemId => {
+                const item = flatBomItems.find(i => i.id === Number(itemId));
+                if (item) {
+                    tax += item.quantity * (PI_BASE_VALUES[item.tier] || 0) * 0.5 * rate;
+                }
+            });
+            
+            (config.exports || []).forEach(itemId => {
+                const item = flatBomItems.find(i => i.id === Number(itemId));
+                if (item) {
+                    tax += item.quantity * (PI_BASE_VALUES[item.tier] || 0) * rate;
+                }
+            });
+        });
+        return tax;
+    }, [selectedSystem, planetConfigs, flatBomItems]);
+
+    const updatePlanetConfig = (planetName, key, value) => {
+        setPlanetConfigs(prev => ({
+            ...prev,
+            [planetName]: {
+                ...(prev[planetName] || { taxRate: 10, imports: [], exports: [] }),
+                [key]: value
+            }
+        }));
+    };
+
     return (
         <div>
             <header style={{ marginBottom: 'var(--space-lg)' }}>
@@ -123,7 +214,7 @@ const PlannerPage = () => {
             <div className="responsive-columns">
                 {/* Left Column - System Selection */}
                 <div className="glass-panel" style={{ flex: '1', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', height: 'fit-content' }}>
-                    <h3 className="text-primary" style={{ marginBottom: 'var(--space-md)' }}>1. Operating System</h3>
+                    <h3 className="text-primary" style={{ marginBottom: 'var(--space-md)' }}>Operating System</h3>
                     
                     <input
                         type="text"
@@ -184,11 +275,11 @@ const PlannerPage = () => {
 
                 {/* Right Column - Product Selection */}
                 <div className="glass-panel" style={{ flex: '1', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', height: 'fit-content' }}>
-                    <h3 className="text-primary" style={{ marginBottom: 'var(--space-md)' }}>2. Target Products</h3>
+                    <h3 className="text-primary" style={{ marginBottom: 'var(--space-md)' }}>Target Commodity</h3>
                     
                     <input
                         type="text"
-                        placeholder="Add product to plan (e.g. Broadcast Node)"
+                        placeholder="Add commodity to plan (e.g. Broadcast Node)"
                         value={productSearch}
                         onChange={(e) => setProductSearch(e.target.value)}
                         style={{
@@ -269,7 +360,68 @@ const PlannerPage = () => {
                 </div>
             </div>
 
+            
+            {/* Production Planets Configuration */}
+            {selectedSystem && selectedProducts.length > 0 && (
+                <div className="glass-panel" style={{ marginTop: 'var(--space-xl)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)' }}>
+                    <h2 style={{ marginBottom: 'var(--space-md)', fontWeight: 300 }}>Production Planets</h2>
+                    <p className="text-muted" style={{ marginBottom: 'var(--space-md)' }}>Configure Customs Office taxes and import/export commodities for each planet.</p>
+                    {selectedSystem.planets.map(planet => {
+                        const config = planetConfigs[planet.name] || { taxRate: 10, imports: [], exports: [] };
+                        return (
+                            <div key={planet.name} style={{ marginBottom: 'var(--space-md)', padding: 'var(--space-md)', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                        <PlanetLabel planetName={planet.type} size={32} style={{ background: 'transparent', border: 'none', padding: 0 }} />
+                                        <h3 style={{ margin: 0 }}>{planet.name}</h3>
+                                    </div>
+                                    <div>
+                                        <label className="text-muted" style={{ marginRight: '8px' }}>Customs Office Tax (%):</label>
+                                        <input 
+                                            type="number" 
+                                            min="0" max="100" step="0.1"
+                                            value={config.taxRate ?? 10}
+                                            onChange={(e) => updatePlanetConfig(planet.name, 'taxRate', parseFloat(e.target.value) || 0)}
+                                            style={{ width: '80px', padding: '4px', borderRadius: '4px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', color: 'white' }}
+                                        />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: 'var(--space-lg)' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label className="text-muted" style={{ display: 'block', marginBottom: '4px' }}>Importing Commodities:</label>
+                                        <select 
+                                            multiple 
+                                            value={config.imports || []}
+                                            onChange={(e) => updatePlanetConfig(planet.name, 'imports', Array.from(e.target.selectedOptions, option => option.value))}
+                                            style={{ width: '100%', height: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', padding: '4px' }}
+                                        >
+                                            {flatBomItems.map(item => (
+                                                <option key={item.id} value={item.id}>{item.name} ({item.quantity.toLocaleString()})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label className="text-muted" style={{ display: 'block', marginBottom: '4px' }}>Exporting Commodities:</label>
+                                        <select 
+                                            multiple 
+                                            value={config.exports || []}
+                                            onChange={(e) => updatePlanetConfig(planet.name, 'exports', Array.from(e.target.selectedOptions, option => option.value))}
+                                            style={{ width: '100%', height: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', padding: '4px' }}
+                                        >
+                                            {flatBomItems.map(item => (
+                                                <option key={item.id} value={item.id}>{item.name} ({item.quantity.toLocaleString()})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
             {/* Estimated Production Summary Table */}
+
             {selectedProducts.length > 0 && (
                 <div className="glass-panel" style={{ marginTop: 'var(--space-xl)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)' }}>
                     <h2 style={{ marginBottom: 'var(--space-md)', fontWeight: 300 }}>Estimated Production Summary</h2>
@@ -281,6 +433,7 @@ const PlannerPage = () => {
                                     <th style={{ padding: 'var(--space-sm)' }}>Target Qty</th>
                                     <th style={{ padding: 'var(--space-sm)' }}>Est. Revenue (Sell)</th>
                                     <th style={{ padding: 'var(--space-sm)' }}>Est. Cost</th>
+                                    <th style={{ padding: 'var(--space-sm)' }}>Est. Tax</th>
                                     <th style={{ padding: 'var(--space-sm)' }}>Est. Profit</th>
                                 </tr>
                             </thead>
@@ -295,7 +448,7 @@ const PlannerPage = () => {
                                         if (!prices || prices.loading) return (
                                             <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                                 <td style={{ padding: 'var(--space-sm)' }}>{p.name}</td>
-                                                <td colSpan={4} style={{ padding: 'var(--space-sm)', color: 'var(--color-text-muted)' }}>Loading data...</td>
+                                                <td colSpan={5} style={{ padding: 'var(--space-sm)', color: 'var(--color-text-muted)' }}>Loading data...</td>
                                             </tr>
                                         );
                                         
@@ -316,6 +469,7 @@ const PlannerPage = () => {
                                                 <td style={{ padding: 'var(--space-sm)' }}>{targetYield.toLocaleString()} units</td>
                                                 <td style={{ padding: 'var(--space-sm)', color: 'var(--color-primary)' }}>{formatISK(dailyRevenue)}</td>
                                                 <td style={{ padding: 'var(--space-sm)', color: 'var(--color-danger)' }}>{formatISK(dailyCost)}</td>
+                                                <td style={{ padding: 'var(--space-sm)', color: 'var(--color-danger)' }}>-</td>
                                                 <td style={{ padding: 'var(--space-sm)', color: dailyProfit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)', fontWeight: 'bold' }}>
                                                     {formatISK(dailyProfit)}
                                                 </td>
@@ -332,8 +486,9 @@ const PlannerPage = () => {
                                                 <td colSpan={2} style={{ padding: 'var(--space-md)', textAlign: 'right' }}>GRAND TOTAL:</td>
                                                 <td style={{ padding: 'var(--space-md)', color: 'var(--color-primary)' }}>{formatTotal(totalRevenue)}</td>
                                                 <td style={{ padding: 'var(--space-md)', color: 'var(--color-danger)' }}>{formatTotal(totalCost)}</td>
-                                                <td style={{ padding: 'var(--space-md)', color: totalProfit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)', fontSize: '1.2rem' }}>
-                                                    {formatTotal(totalProfit)}
+                                                <td style={{ padding: 'var(--space-md)', color: 'var(--color-danger)' }}>{formatTotal(totalPocoTax)}</td>
+                                                <td style={{ padding: 'var(--space-md)', color: (totalProfit - totalPocoTax) >= 0 ? 'var(--color-primary)' : 'var(--color-danger)', fontSize: '1.2rem' }}>
+                                                    {formatTotal(totalProfit - totalPocoTax)}
                                                 </td>
                                             </tr>
                                         </>
@@ -364,32 +519,6 @@ const PlannerPage = () => {
                     </p>
                     
                     {(() => {
-                        const globalBom = { P4: {}, P3: {}, P2: {}, P1: {}, P0: {} };
-                        
-                        const traverseGlobal = (itemId, qtyNeeded) => {
-                            const item = commodities.find(c => c.id === itemId);
-                            if (!item) return;
-                            
-                            const tier = item.tier;
-                            if (globalBom[tier]) {
-                                globalBom[tier][itemId] = (globalBom[tier][itemId] || 0) + qtyNeeded;
-                            }
-                            
-                            if (tier === 'P0') return;
-                            
-                            const batches = qtyNeeded / (item.outputYield || 1);
-                            for (const input of item.inputs) {
-                                traverseGlobal(input.id, input.quantity * batches);
-                            }
-                        };
-                        
-                        selectedProducts.forEach(p => {
-                            const batches = (targetQuantities[p.id] || 1) / (p.outputYield || 1);
-                            for (const input of p.inputs) {
-                                traverseGlobal(input.id, input.quantity * batches);
-                            }
-                        });
-
                         const tiers = ['P4', 'P3', 'P2', 'P1', 'P0'];
                         
                         return (
@@ -483,7 +612,7 @@ const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
                     <div style={{ fontSize: '0.9rem' }}><span className="text-muted">Sell Price:</span> {profitInfo.loading ? '...' : formatISK(profitInfo.sell)}</div>
                     <div style={{ fontSize: '0.9rem' }}><span className="text-muted">Input Cost:</span> <span className="text-danger">{profitInfo.loading ? '...' : formatISK(profitInfo.cost)}</span></div>
                     <div style={{ fontSize: '1.1rem', marginTop: '4px', fontWeight: 'bold', color: profit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)' }}>
-                        <span className="text-muted" style={{ fontWeight: 'normal', fontSize: '0.9rem' }}>Profit:</span> {profitInfo.loading ? '...' : formatISK(profit)}
+                        <span className="text-muted" style={{ fontWeight: 'normal', fontSize: '0.9rem' }}>Gross Profit (Excl. Tax):</span> {profitInfo.loading ? '...' : formatISK(profit)}
                     </div>
                 </div>
             </div>
