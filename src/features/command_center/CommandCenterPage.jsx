@@ -5,6 +5,8 @@ import { getStructureDataByTypeId } from '../../data/pi_structures';
 import './CommandCenterPage.css';
 
 const PlanetCard = ({ planet, token, userId }) => {
+    const [details, setDetails] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [universePlanet, setUniversePlanet] = useState(null);
     const [universeSystem, setUniverseSystem] = useState(null);
 
