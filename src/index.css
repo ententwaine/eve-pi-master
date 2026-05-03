@@ -84,7 +84,7 @@ body {
   flex: 1;
   width: 100%;
   min-height: 100vh;
-  background-color: var(--color-bg-base);
+  background-color: transparent;
   color: var(--color-text-main);
 }
 
