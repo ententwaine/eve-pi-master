@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchPlanetaryColonies, fetchPlanetDetails } from '../../services/esiApi';
+import { fetchPlanetaryColonies, fetchPlanetDetails, fetchUniversePlanet, fetchUniverseSystem } from '../../services/esiApi';
 import { getStructureDataByTypeId } from '../../data/pi_structures';
 import './CommandCenterPage.css';
 
 const PlanetCard = ({ planet, token, userId }) => {
-    const [details, setDetails] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [universePlanet, setUniversePlanet] = useState(null);
+    const [universeSystem, setUniverseSystem] = useState(null);
 
     useEffect(() => {
         const loadDetails = async () => {
             const data = await fetchPlanetDetails(userId, planet.planet_id, token);
             setDetails(data);
+            
+            const uPlanet = await fetchUniversePlanet(planet.planet_id);
+            if (uPlanet) {
+                setUniversePlanet(uPlanet);
+                const uSystem = await fetchUniverseSystem(uPlanet.system_id);
+                if (uSystem) setUniverseSystem(uSystem);
+            }
+            
             setLoading(false);
         };
         loadDetails();
@@ -31,8 +39,8 @@ const PlanetCard = ({ planet, token, userId }) => {
             <div className="live-planet-card glass-panel">
                 <div className="lp-header">
                     <div className="lp-title-block">
-                        <div className="lp-system">Planet {planet.planet_id}</div>
-                        <div className="lp-type">{planet.planet_type}</div>
+                        <div className="lp-system">{universeSystem ? universeSystem.name : 'System Data Required'}</div>
+                        <div className="lp-type">{universePlanet ? universePlanet.name : `${planet.planet_type} Planet`}</div>
                     </div>
                 </div>
                 <div className="text-danger" style={{ padding: 'var(--space-md) 0' }}>Failed to load planet telemetry.</div>
@@ -53,8 +61,14 @@ const PlanetCard = ({ planet, token, userId }) => {
         const struct = getStructureDataByTypeId(pin.type_id);
         const pinData = { ...pin, structName: struct.name, icon: struct.icon };
         
-        if (struct.name === 'Command Center') commandCenter = pinData;
-        else if (struct.name === 'Extractor Control Unit') extractors.push(pinData);
+        if (struct.name === 'Command Center') {
+            pinData.icon = '/icons/icon1.jpg';
+            commandCenter = pinData;
+        }
+        else if (struct.name === 'Extractor Control Unit') {
+            pinData.icon = '/icons/icon2.jpg';
+            extractors.push(pinData);
+        }
         else if (struct.name.includes('Industry')) industry.push(pinData);
         else if (struct.name === 'Storage Facility') storage.push(pinData);
         else if (struct.name === 'Launchpad') launchpads.push(pinData);
@@ -71,19 +85,28 @@ const PlanetCard = ({ planet, token, userId }) => {
         return Math.min(100, (totalVolume / maxCap) * 100);
     };
 
+    const getRemainingTime = (expiryDate) => {
+        if (!expiryDate) return '';
+        const diff = expiryDate.getTime() - new Date().getTime();
+        if (diff <= 0) return 'Depleted';
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        return `${hours}h ${minutes}m remaining`;
+    };
+
     return (
-        <div className="live-planet-card glass-panel">
+        <div className="live-planet-card glass-panel" style={{ padding: 'var(--space-sm)' }}>
             {commandCenter && (
-                <img src={commandCenter.icon} alt="BG" className="planet-card-bg" />
+                <img src={`/planet_icons/${planet.planet_type}.png`} onError={(e) => { e.target.onerror = null; e.target.src=`/planet_icons/${planet.planet_type}.jpg`; }} alt="BG" className="planet-card-bg" style={{ opacity: 0.15, right: '-20px', top: '-20px', width: '150px', height: '150px' }} />
             )}
             
-            <div className="lp-header">
-                <div className="lp-title-block">
-                    <div className="lp-system">System Data Required</div>
-                    <div className="lp-type">{planet.planet_type} Planet</div>
+            <div className="lp-header" style={{ paddingBottom: '4px', marginBottom: '8px' }}>
+                <div className="lp-title-block" style={{ flexDirection: 'row', alignItems: 'baseline', gap: '8px' }}>
+                    <div className="lp-system">{universeSystem ? universeSystem.name : 'System Data Required'}</div>
+                    <div className="lp-type" style={{ fontSize: '0.9rem', color: 'var(--color-text)' }}>{universePlanet ? universePlanet.name : `${planet.planet_type} Planet`}</div>
                 </div>
-                <div className="lp-upgrade">
-                    Upgrade Level {planet.upgrade_level}
+                <div className="lp-upgrade" style={{ padding: '1px 6px' }}>
+                    Lv {planet.upgrade_level}
                 </div>
             </div>
 
@@ -128,7 +151,7 @@ const PlanetCard = ({ planet, token, userId }) => {
                                 <div key={lp.pin_id} className="storage-bar-container">
                                     <div className="storage-header">
                                         <span>Launchpad {i+1}</span>
-                                        <span>{percent.toFixed(1)}% Full</span>
+                                        <span>{(100 - percent).toFixed(1)}% Remaining</span>
                                     </div>
                                     <div className="storage-track">
                                         <div className={`storage-fill ${percent > 90 ? 'full' : ''}`} style={{ width: `${percent}%` }}></div>
@@ -142,7 +165,7 @@ const PlanetCard = ({ planet, token, userId }) => {
                                 <div key={st.pin_id} className="storage-bar-container">
                                     <div className="storage-header">
                                         <span>Storage Facility {i+1}</span>
-                                        <span>{percent.toFixed(1)}% Full</span>
+                                        <span>{(100 - percent).toFixed(1)}% Remaining</span>
                                     </div>
                                     <div className="storage-track">
                                         <div className={`storage-fill ${percent > 90 ? 'full' : ''}`} style={{ width: `${percent}%` }}></div>
@@ -155,19 +178,22 @@ const PlanetCard = ({ planet, token, userId }) => {
             )}
 
             {extractors.length > 0 && (
-                <div className="lp-section">
-                    <div className="lp-section-title">Extraction Status</div>
+                <div className="lp-section" style={{ marginTop: '8px' }}>
+                    <div className="lp-section-title" style={{ marginBottom: '4px' }}>Extraction Status</div>
                     {extractors.map((ecu, i) => {
                         const hasActiveExtractor = ecu.extractor_details && ecu.extractor_details.qty_per_cycle > 0;
                         const expiryTime = ecu.expiry_time ? new Date(ecu.expiry_time) : null;
                         const isExpired = expiryTime ? expiryTime < new Date() : true;
 
                         return (
-                            <div key={ecu.pin_id} className="extractor-activity">
+                            <div key={ecu.pin_id} className="extractor-activity" style={{ marginTop: '4px', padding: '4px 8px' }}>
                                 {(!isExpired && hasActiveExtractor) ? (
                                     <>
                                         <div className="extraction-indicator"></div>
-                                        <span className="text-success" style={{ fontSize: '0.85rem' }}>Active Extraction</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span className="text-success" style={{ fontSize: '0.85rem' }}>Active Extraction</span>
+                                            <span className="text-muted" style={{ fontSize: '0.75rem' }}>{getRemainingTime(expiryTime)}</span>
+                                        </div>
                                     </>
                                 ) : (
                                     <>

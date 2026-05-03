@@ -98,6 +98,36 @@ export const fetchPlanetDetails = async (characterId, planetId, token) => {
     }
 };
 
+export const fetchUniversePlanet = async (planetId) => {
+    const cacheKey = `universe-planet-${planetId}`;
+    if (cache.has(cacheKey)) return cache.get(cacheKey).data;
+    try {
+        const response = await fetch(`${ESI_BASE_URL}/universe/planets/${planetId}/?datasource=tranquility`);
+        if (!response.ok) throw new Error(`Failed to fetch universe planet ${planetId}`);
+        const data = await response.json();
+        cache.set(cacheKey, { timestamp: Date.now(), data });
+        return data;
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
+export const fetchUniverseSystem = async (systemId) => {
+    const cacheKey = `universe-system-${systemId}`;
+    if (cache.has(cacheKey)) return cache.get(cacheKey).data;
+    try {
+        const response = await fetch(`${ESI_BASE_URL}/universe/systems/${systemId}/?datasource=tranquility`);
+        if (!response.ok) throw new Error(`Failed to fetch universe system ${systemId}`);
+        const data = await response.json();
+        cache.set(cacheKey, { timestamp: Date.now(), data });
+        return data;
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
 export const getLowestSellOrder = async (regionId, typeId, systemId = null) => {
     const orders = await fetchMarketOrders(regionId, typeId, 'sell');
     let validOrders = orders;
