@@ -9,6 +9,7 @@ const TopNav = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMaterialsOpen, setIsMaterialsOpen] = useState(false);
     const [isPlannersOpen, setIsPlannersOpen] = useState(false);
+    const [isMarketOpen, setIsMarketOpen] = useState(false);
 
     const toggleMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -18,6 +19,7 @@ const TopNav = () => {
         setIsMobileMenuOpen(false);
         setIsMaterialsOpen(false);
         setIsPlannersOpen(false);
+        setIsMarketOpen(false);
     };
 
     return (
@@ -65,9 +67,13 @@ const TopNav = () => {
                         </div>
                     </div>
 
-                    <NavLink to="/market" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-                        Pi Market
-                    </NavLink>
+                    <div className="dropdown">
+                        <span className="topnav-link" style={{ cursor: 'pointer' }} onClick={() => setIsMarketOpen(!isMarketOpen)}>Market ▼</span>
+                        <div className={`dropdown-content ${isMarketOpen ? 'mobile-open' : ''}`}>
+                            <NavLink to="/market" onClick={closeMenu}>Pi Market</NavLink>
+                            <NavLink to="/trend" onClick={closeMenu}>Pi Trend</NavLink>
+                        </div>
+                    </div>
 
                     <div className="dropdown">
                         <span className="topnav-link" style={{ cursor: 'pointer' }} onClick={() => setIsPlannersOpen(!isPlannersOpen)}>Planners ▼</span>

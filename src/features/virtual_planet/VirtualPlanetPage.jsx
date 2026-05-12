@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { COMMAND_CENTER_UPGRADES, PI_STRUCTURES } from '../../data/pi_structures';
+import { getSavedVirtualPlanners, saveVirtualPlanner } from '../../utils/storage';
 import './VirtualPlanetPage.css';
 
-const PlanetSlot = ({ slotId, maxPg, maxCpu }) => {
-    const [systemName, setSystemName] = useState('');
-    const [planetType, setPlanetType] = useState('Barren');
-    const [buildings, setBuildings] = useState([]);
+const PlanetSlot = ({ slotId, maxPg, maxCpu, slotData, onSlotUpdate }) => {
+    const systemName = slotData?.systemName || '';
+    const planetType = slotData?.planetType || 'Barren';
+    const buildings = slotData?.buildings || [];
+
+    const updateSlot = (updates) => {
+        if (onSlotUpdate) {
+            onSlotUpdate(slotId, { ...slotData, ...updates });
+        }
+    };
     
     // Always have exactly 1 command center
     useEffect(() => {
         if (buildings.length === 0) {
-            setBuildings([{ ...PI_STRUCTURES.command_center, id: Date.now() }]);
+            updateSlot({ buildings: [{ ...PI_STRUCTURES.command_center, id: Date.now() }] });
         }
-    }, [buildings]);
+    }, [buildings.length]);
 
     const usedPg = buildings.reduce((sum, b) => sum + b.power, 0);
     const usedCpu = buildings.reduce((sum, b) => sum + b.cpu, 0);
@@ -40,13 +47,13 @@ const PlanetSlot = ({ slotId, maxPg, maxCpu }) => {
             return;
         }
 
-        setBuildings([...buildings, { ...template, id: Date.now(), key: buildingKey }]);
+        updateSlot({ buildings: [...buildings, { ...template, id: Date.now(), key: buildingKey }] });
     };
 
     const handleRemoveBuilding = (id) => {
         const b = buildings.find(x => x.id === id);
         if (b && b.name === 'Command Center') return; // Cannot remove CC
-        setBuildings(buildings.filter(b => b.id !== id));
+        updateSlot({ buildings: buildings.filter(b => b.id !== id) });
     };
 
     const buildingCounts = buildings.reduce((acc, b) => {
@@ -65,10 +72,10 @@ const PlanetSlot = ({ slotId, maxPg, maxCpu }) => {
                     type="text" 
                     placeholder="Enter System Name..." 
                     value={systemName} 
-                    onChange={e => setSystemName(e.target.value)}
+                    onChange={e => updateSlot({ systemName: e.target.value })}
                     style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '1.1rem', fontWeight: 'bold', outline: 'none', width: '50%' }}
                 />
-                <select value={planetType} onChange={e => setPlanetType(e.target.value)} className="hub-selector" style={{ padding: '2px 8px', fontSize: '0.8rem' }}>
+                <select value={planetType} onChange={e => updateSlot({ planetType: e.target.value })} className="hub-selector" style={{ padding: '2px 8px', fontSize: '0.8rem' }}>
                     {['Barren', 'Gas', 'Ice', 'Lava', 'Oceanic', 'Plasma', 'Storm', 'Temperate'].map(t => (
                         <option key={t} value={t}>{t}</option>
                     ))}
@@ -164,30 +171,104 @@ const VirtualPlanetPage = () => {
     const { user } = useAuth();
     
     // Default to max skills if no user is logged in
-    // Realistically, we would fetch these from the user's ESI skill data
-    // For the UI, we'll assume max skills to allow full functionality
     const maxPlanets = 6; 
     const ccUpgradeLevel = 5;
 
-    const [slots, setSlots] = useState([]);
+    const [slotsData, setSlotsData] = useState({});
+    const [savedPlanners, setSavedPlanners] = useState([]);
+    const [currentPlannerId, setCurrentPlannerId] = useState('');
+    const [plannerName, setPlannerName] = useState('My Virtual Planets');
 
     useEffect(() => {
-        // Initialize slots
-        const initialSlots = Array.from({ length: maxPlanets }).map((_, i) => ({ id: `slot-${i}` }));
-        setSlots(initialSlots);
-    }, [maxPlanets]);
+        // Load saved planners on mount
+        const planners = getSavedVirtualPlanners();
+        setSavedPlanners(planners);
+    }, []);
 
     const currentUpgrade = COMMAND_CENTER_UPGRADES[ccUpgradeLevel];
 
+    const handleSlotUpdate = (slotId, data) => {
+        setSlotsData(prev => ({
+            ...prev,
+            [slotId]: data
+        }));
+    };
+
+    const handleSavePlanner = () => {
+        if (!plannerName.trim()) {
+            alert("Please enter a name for your planner.");
+            return;
+        }
+
+        const newPlanner = {
+            id: currentPlannerId || Date.now().toString(),
+            name: plannerName,
+            slotsData: slotsData
+        };
+
+        const updatedPlanners = saveVirtualPlanner(newPlanner);
+        setSavedPlanners(updatedPlanners);
+        setCurrentPlannerId(newPlanner.id);
+        alert("Virtual Planner saved successfully!");
+    };
+
+    const handleLoadPlanner = (id) => {
+        if (!id) {
+            // Create new
+            setCurrentPlannerId('');
+            setPlannerName('My Virtual Planets');
+            setSlotsData({});
+            return;
+        }
+
+        const planner = savedPlanners.find(p => p.id === id);
+        if (planner) {
+            setCurrentPlannerId(planner.id);
+            setPlannerName(planner.name);
+            setSlotsData(planner.slotsData || {});
+        }
+    };
+
     return (
         <div className="vp-container fade-in">
-            <div className="vp-header">
+            <div className="vp-header" style={{ alignItems: 'center' }}>
                 <div>
                     <h1 className="text-primary" style={{ margin: 0, fontSize: '1.8rem' }}>Virtual Planet Planner</h1>
                     <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
                         {user ? `Loaded skills for ${user.name}` : 'Using default Max Skills (Log in to use your actual skills)'}
                     </p>
                 </div>
+
+                <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-md)' }}>
+                    <select 
+                        value={currentPlannerId} 
+                        onChange={(e) => handleLoadPlanner(e.target.value)}
+                        className="hub-selector"
+                        style={{ padding: '8px 12px' }}
+                    >
+                        <option value="">+ Create New Planner</option>
+                        {savedPlanners.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                    </select>
+                    
+                    <input 
+                        type="text" 
+                        placeholder="Planner Name" 
+                        value={plannerName}
+                        onChange={(e) => setPlannerName(e.target.value)}
+                        style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'white' }}
+                    />
+                    
+                    <button 
+                        onClick={handleSavePlanner}
+                        className="btn"
+                        style={{ padding: '8px 16px', background: 'var(--color-primary)', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                        Save
+                    </button>
+                </div>
+
                 <div style={{ textAlign: 'right' }}>
                     <div className="text-main" style={{ fontWeight: 'bold' }}>Command Center Upgrade V</div>
                     <div className="text-muted" style={{ fontSize: '0.8rem' }}>
@@ -197,14 +278,19 @@ const VirtualPlanetPage = () => {
             </div>
 
             <div className="planet-slots-container">
-                {slots.map((slot) => (
-                    <PlanetSlot 
-                        key={slot.id} 
-                        slotId={slot.id} 
-                        maxPg={currentUpgrade.power} 
-                        maxCpu={currentUpgrade.cpu} 
-                    />
-                ))}
+                {Array.from({ length: maxPlanets }).map((_, i) => {
+                    const slotId = `slot-${i}`;
+                    return (
+                        <PlanetSlot 
+                            key={slotId} 
+                            slotId={slotId}
+                            slotData={slotsData[slotId]}
+                            onSlotUpdate={handleSlotUpdate}
+                            maxPg={currentUpgrade.power} 
+                            maxCpu={currentUpgrade.cpu} 
+                        />
+                    );
+                })}
             </div>
         </div>
     );

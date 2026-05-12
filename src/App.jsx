@@ -10,6 +10,7 @@ import HomePage from './features/home/HomePage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import MaterialsPage from './features/materials/MaterialsPage';
 import MarketPage from './features/market/MarketPage';
+import TrendPage from './features/market/TrendPage';
 import PlannerPage from './features/planner/PlannerPage';
 import CommodityDetailPage from './features/pi/CommodityDetailPage';
 import CallbackPage from './features/auth/CallbackPage';
@@ -35,6 +36,7 @@ function App() {
                             <Route path="/dashboard" element={<DashboardPage />} />
                             <Route path="/materials/:tier" element={<MaterialsPage />} />
                             <Route path="/market" element={<MarketPage />} />
+                            <Route path="/trend" element={<TrendPage />} />
                             <Route path="/planner" element={<PlannerPage />} />
                             <Route path="/virtual-planet" element={<VirtualPlanetPage />} />
                             <Route path="/production-vs" element={<ProductionVsPage />} />

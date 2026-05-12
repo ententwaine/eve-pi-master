@@ -7,6 +7,7 @@ import SchematicTree from '../pi/components/SchematicTree';
 import PlanetBreakdown from '../pi/components/PlanetBreakdown';
 import PlanetLabel from '../../components/PlanetLabel';
 import { getLowestSellOrder, getHighestBuyOrder } from '../../services/esiApi';
+import { getSavedPiPlanners, savePiPlanner } from '../../utils/storage';
 
 const PlannerPage = () => {
     const { selectedHub } = useTradeHub();
@@ -17,6 +18,62 @@ const PlannerPage = () => {
     const [productPrices, setProductPrices] = useState({});
     const [targetQuantities, setTargetQuantities] = useState({});
     const [planetConfigs, setPlanetConfigs] = useState({});
+
+    const [savedPlanners, setSavedPlanners] = useState([]);
+    const [currentPlannerId, setCurrentPlannerId] = useState('');
+    const [plannerName, setPlannerName] = useState('My PI Planner');
+
+    useEffect(() => {
+        setSavedPlanners(getSavedPiPlanners());
+    }, []);
+
+    const handleSavePlanner = () => {
+        if (!plannerName.trim()) {
+            alert("Please enter a name for your planner.");
+            return;
+        }
+
+        const newPlanner = {
+            id: currentPlannerId || Date.now().toString(),
+            name: plannerName,
+            data: {
+                systemSearch,
+                selectedSystem,
+                selectedProducts,
+                targetQuantities,
+                planetConfigs
+            }
+        };
+
+        const updated = savePiPlanner(newPlanner);
+        setSavedPlanners(updated);
+        setCurrentPlannerId(newPlanner.id);
+        alert("PI Planner saved successfully!");
+    };
+
+    const handleLoadPlanner = (id) => {
+        if (!id) {
+            setCurrentPlannerId('');
+            setPlannerName('My PI Planner');
+            setSystemSearch('');
+            setSelectedSystem(null);
+            setSelectedProducts([]);
+            setTargetQuantities({});
+            setPlanetConfigs({});
+            return;
+        }
+
+        const planner = savedPlanners.find(p => p.id === id);
+        if (planner) {
+            setCurrentPlannerId(planner.id);
+            setPlannerName(planner.name);
+            setSystemSearch(planner.data.systemSearch || '');
+            setSelectedSystem(planner.data.selectedSystem || null);
+            setSelectedProducts(planner.data.selectedProducts || []);
+            setTargetQuantities(planner.data.targetQuantities || {});
+            setPlanetConfigs(planner.data.planetConfigs || {});
+        }
+    };
 
     const PI_BASE_VALUES = {
         'P0': 5,
@@ -212,9 +269,41 @@ const PlannerPage = () => {
 
     return (
         <div>
-            <header style={{ marginBottom: 'var(--space-lg)' }}>
-                <h1 style={{ fontWeight: 300 }}>Production Planner</h1>
-                <p className="text-muted">Plan your planetary interaction chains and verify profitability at {selectedHub.name}</p>
+            <header style={{ marginBottom: 'var(--space-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                    <h1 style={{ fontWeight: 300, margin: 0 }}>Production Planner</h1>
+                    <p className="text-muted" style={{ margin: 0, marginTop: '4px' }}>Plan your planetary interaction chains and verify profitability at {selectedHub.name}</p>
+                </div>
+                
+                <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-md)' }}>
+                    <select 
+                        value={currentPlannerId} 
+                        onChange={(e) => handleLoadPlanner(e.target.value)}
+                        className="hub-selector"
+                        style={{ padding: '8px 12px' }}
+                    >
+                        <option value="">+ Create New Planner</option>
+                        {savedPlanners.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                    </select>
+                    
+                    <input 
+                        type="text" 
+                        placeholder="Planner Name" 
+                        value={plannerName}
+                        onChange={(e) => setPlannerName(e.target.value)}
+                        style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'white' }}
+                    />
+                    
+                    <button 
+                        onClick={handleSavePlanner}
+                        className="btn"
+                        style={{ padding: '8px 16px', background: 'var(--color-primary)', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                        Save
+                    </button>
+                </div>
             </header>
 
             <div className="responsive-columns">
