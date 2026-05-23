@@ -92,6 +92,9 @@ const TopNav = () => {
                     <NavLink to="/consultant" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
                         PI Consultant
                     </NavLink>
+                    <NavLink to="/academy" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
+                        PI Academy
+                    </NavLink>
                 </nav>
 
                 <div className="topnav-controls">

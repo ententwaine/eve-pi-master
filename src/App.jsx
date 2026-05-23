@@ -17,6 +17,7 @@ import CallbackPage from './features/auth/CallbackPage';
 import VirtualPlanetPage from './features/virtual_planet/VirtualPlanetPage';
 import CommandCenterPage from './features/command_center/CommandCenterPage';
 import ConsultantPage from './features/consultant/ConsultantPage';
+import AcademyPage from './features/academy/AcademyPage';
 import AllOrdersPage from './features/market/AllOrdersPage';
 import PlanetsPage from './features/planets/PlanetsPage';
 import ProductionVsPage from './features/production_vs/ProductionVsPage';
@@ -42,6 +43,7 @@ function App() {
                             <Route path="/production-vs" element={<ProductionVsPage />} />
                             <Route path="/command-center" element={<CommandCenterPage />} />
                             <Route path="/consultant" element={<ConsultantPage />} />
+                            <Route path="/academy" element={<AcademyPage />} />
                             <Route path="/planets" element={<PlanetsPage />} />
                             <Route path="/commodity/:id" element={<CommodityDetailPage />} />
                             <Route path="/orders/:regionId/:typeId" element={<AllOrdersPage />} />
