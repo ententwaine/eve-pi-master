@@ -9,6 +9,45 @@ const sortedCommodities = [...commodities].sort((a, b) => b.name.length - a.name
 const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const commodityPattern = new RegExp(`\\b(${sortedCommodities.map(c => escapeRegExp(c.name)).join('|')})\\b`, 'gi');
 
+const colonyStructures = [
+    {
+        name: "Command Center",
+        shortName: "CC",
+        image: "/structures/command_center.png",
+        use: "The core power/CPU anchor. It does not store or process materials directly, but it feeds CPU and Power Grid (PG) to your entire colony. Upgrading the Command Center increases your overall construction budget for factories, link routes, and extractors."
+    },
+    {
+        name: "Extractor Control Unit (ECU)",
+        shortName: "ECU",
+        image: "/structures/extractor_ecu.png",
+        use: "The mining hub. It extracts raw resources (P0) from the planet. You attach movable extractor heads to the ECU and position them over rich hotspots on the planet's surface scanning overlay to pull raw materials."
+    },
+    {
+        name: "Basic Industry Facility",
+        shortName: "Basic Factory",
+        image: "/structures/basic_industry.png",
+        use: "The primary refinery. It processes raw materials (P0) into processed commodities (P1). It consumes 3,000 units of a single raw material to output 20 units of a P1 commodity per 30-minute cycle."
+    },
+    {
+        name: "Advanced Industry Facility",
+        shortName: "Advanced Factory",
+        image: "/structures/advanced_industry.png",
+        use: "The secondary refinery. It synthesizes P2 (refined) or P3 (specialized) commodities. It requires multiple inputs. For example, it consumes two different P1 commodities (40 units each) to produce 5 units of a P2 commodity per 1-hour cycle."
+    },
+    {
+        name: "Launchpad",
+        shortName: "Launchpad",
+        image: "/structures/launchpad.png",
+        use: "The primary shipping and buffer hub. It stores up to 10,000m³ of commodities and allows you to import and export materials directly to and from the orbiting Customs Office (POCO)."
+    },
+    {
+        name: "Storage Facility",
+        shortName: "Storage",
+        image: "/structures/storage_facility.png",
+        use: "The storage depot. It stores up to 12,000m³ of commodities, providing a massive buffer to hold raw materials or capture finished products. Unlike the Launchpad, it cannot transfer goods directly to orbit."
+    }
+];
+
 const AcademyPage = () => {
     // Current active page: "module-1" through "module-10", or "appendix"
     const [activeModuleId, setActiveModuleId] = useState(() => {
@@ -231,7 +270,29 @@ const AcademyPage = () => {
                             <section key={i} className="module-section">
                                 <h3>{sect.title}</h3>
                                 {sect.paragraphs.map((p, pi) => (
-                                    <p key={pi}>{renderLinkedText(p)}</p>
+                                    <div key={pi} style={{ marginBottom: 'var(--space-sm)' }}>
+                                        <p>{renderLinkedText(p)}</p>
+                                        {/* Insert structures section if this is the second paragraph of the first section of module-1 */}
+                                        {currentModule.id === 'module-1' && sect.title === 'PI as a Supply Chain System' && pi === 1 && (
+                                            <div className="structures-section-wrapper">
+                                                <h4 className="structures-section-title text-accent">Colony Infrastructure Components</h4>
+                                                <div className="colony-structures-grid">
+                                                    {colonyStructures.map((struct, sIdx) => (
+                                                        <div key={sIdx} className="structure-card glass-panel">
+                                                            <div className="structure-img-wrapper">
+                                                                <img src={struct.image} alt={struct.name} className="structure-img" />
+                                                                <div className="structure-badge">{struct.shortName}</div>
+                                                            </div>
+                                                            <div className="structure-info">
+                                                                <div className="structure-name">{struct.name}</div>
+                                                                <div className="structure-use">{struct.use}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 ))}
                             </section>
                         ))}
