@@ -1,3 +1,5 @@
+import { planetTypes, commodities } from '../../data/pi_data';
+
 export const academyModules = [
     {
         id: "module-1",
@@ -419,45 +421,24 @@ export const skillChecklist = [
     { id: "s-gi", name: "Gallente Industrial", recommended: "Level I", desc: "Required to fly the Epithal, the premier PI hauling ship.", wiki: "https://wiki.eveuniversity.org/Gallente_Industrial" }
 ];
 
-export const planetTypeDetails = [
-    {
-        name: "Barren",
-        desc: "Desolate and lifeless, featuring minimal atmospheric conditions. Excellent for P4 factory planets.",
-        resources: ["Aqueous Liquids", "Base Metals", "Carbon Compounds", "Microorganisms", "Noble Metals"]
-    },
-    {
-        name: "Gas",
-        desc: "Vast gas giants with dense, stormy atmospheres. Huge radius requires high link CPU.",
-        resources: ["Aqueous Liquids", "Base Metals", "Ionic Solutions", "Noble Gas", "Reactive Gas"]
-    },
-    {
-        name: "Ice",
-        desc: "Frozen worlds covered entirely by thick glacial sheets.",
-        resources: ["Aqueous Liquids", "Heavy Metals", "Microorganisms", "Noble Gas", "Planktic Colonies"]
-    },
-    {
-        name: "Lava",
-        desc: "Volcanically hyper-active worlds with oceans of molten rock.",
-        resources: ["Base Metals", "Felsic Magma", "Heavy Metals", "Non-CS Crystals", "Suspended Plasma"]
-    },
-    {
-        name: "Oceanic",
-        desc: "Worlds entirely enveloped by deep global oceans.",
-        resources: ["Aqueous Liquids", "Base Metals", "Carbon Compounds", "Complex Organisms", "Planktic Colonies"]
-    },
-    {
-        name: "Plasma",
-        desc: "Scorched planets bathed in intense radiation and plasma storms.",
-        resources: ["Base Metals", "Heavy Metals", "Noble Metals", "Non-CS Crystals", "Suspended Plasma"]
-    },
-    {
-        name: "Storm",
-        desc: "Turbulent worlds defined by violent global weather systems.",
-        resources: ["Aqueous Liquids", "Base Metals", "Ionic Solutions", "Noble Gas", "Suspended Plasma"]
-    },
-    {
-        name: "Temperate",
-        desc: "Lush, life-bearing worlds with stable climates. Ideal for P4 factory setup.",
-        resources: ["Aqueous Liquids", "Autotrophs", "Base Metals", "Carbon Compounds", "Complex Organisms"]
-    }
-];
+const getResourceName = (id) => {
+    const item = commodities.find(c => c.id === id);
+    return item ? item.name : `Unknown (${id})`;
+};
+
+const planetDescriptions = {
+    "Barren": "Desolate and lifeless, featuring minimal atmospheric conditions. Excellent for P4 factory planets.",
+    "Gas": "Vast gas giants with dense, stormy atmospheres. Huge radius requires high link CPU.",
+    "Ice": "Frozen worlds covered entirely by thick glacial sheets.",
+    "Lava": "Volcanically hyper-active worlds with oceans of molten rock.",
+    "Oceanic": "Worlds entirely enveloped by deep global oceans.",
+    "Plasma": "Scorched planets bathed in intense radiation and plasma storms.",
+    "Storm": "Turbulent worlds defined by violent global weather systems.",
+    "Temperate": "Lush, life-bearing worlds with stable climates. Ideal for P4 factory setup."
+};
+
+export const planetTypeDetails = planetTypes.map(p => ({
+    name: p.name,
+    desc: planetDescriptions[p.name] || p.description,
+    resources: p.resources.map(id => getResourceName(id))
+}));
