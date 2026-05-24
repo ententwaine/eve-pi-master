@@ -315,7 +315,7 @@ const AcademyPage = () => {
                                                 <div className="hauler-ships-grid">
                                                     <div className="ship-card glass-panel">
                                                         <div className="ship-img-wrapper">
-                                                            <img src="/structures/epithal.png" alt="Gallente Epithal Hauler" className="ship-img" />
+                                                            <img src="/structures/epithal.jpg" alt="Gallente Epithal Hauler" className="ship-img" />
                                                             <div className="ship-badge epithal-badge">Gallente</div>
                                                         </div>
                                                         <div className="ship-info">
@@ -325,7 +325,7 @@ const AcademyPage = () => {
                                                     </div>
                                                     <div className="ship-card glass-panel">
                                                         <div className="ship-img-wrapper">
-                                                            <img src="/structures/squall.png" alt="Upwell Squall Hauler" className="ship-img" />
+                                                            <img src="/structures/squall.jpg" alt="Upwell Squall Hauler" className="ship-img" />
                                                             <div className="ship-badge squall-badge">Upwell</div>
                                                         </div>
                                                         <div className="ship-info">
