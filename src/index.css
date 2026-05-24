@@ -508,3 +508,14 @@ body {
   /* Translate exactly by a fraction. Since we repeated the array 3 times, moving by 1/3 covers the entire array once cleanly to loop */
   100% { transform: translateX(calc(-100% / 3)); }
 }
+
+/* Production Flowchart Schematic Interactive Nodes */
+.tree-node-card {
+  transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.tree-node-card:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 12px rgba(0, 217, 247, 0.3) !important;
+}

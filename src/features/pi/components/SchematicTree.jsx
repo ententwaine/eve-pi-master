@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { commodities } from '../../../data/pi_data';
 import { useTradeHub } from '../../../context/TradeHubContext';
 import { getLowestSellOrder } from '../../../services/esiApi';
@@ -115,16 +116,23 @@ const TreeNode = ({ node, level = 0, prices }) => {
             )}
 
             {/* The Node Card (RIGHT) */}
-            <div className={`glass-panel tree-node-card tier-${node.tier}`} data-tier={node.tier} style={{
-                padding: '4px 8px',
-                borderRadius: 'var(--radius-sm)',
-                marginLeft: !isLeaf ? '12px' : '0',
-                border: `1px solid var(--color-tier-${node.tier?.toLowerCase() || 'p0'})`,
-                background: 'rgba(20, 22, 30, 0.8)',
-                zIndex: 2,
-                whiteSpace: 'nowrap',
-                position: 'relative'
-            }}>
+            <Link 
+                to={`/commodity/${node.id}`}
+                className={`glass-panel tree-node-card tier-${node.tier}`} 
+                data-tier={node.tier} 
+                style={{
+                    padding: '4px 8px',
+                    borderRadius: 'var(--radius-sm)',
+                    marginLeft: !isLeaf ? '12px' : '0',
+                    border: `1px solid var(--color-tier-${node.tier?.toLowerCase() || 'p0'})`,
+                    background: 'rgba(20, 22, 30, 0.8)',
+                    zIndex: 2,
+                    whiteSpace: 'nowrap',
+                    position: 'relative',
+                    textDecoration: 'none',
+                    display: 'block'
+                }}
+            >
                 {/* Connecting Line Left to Sibling Line */}
                 {!isLeaf && (
                     <div className="lines" style={{
@@ -159,7 +167,7 @@ const TreeNode = ({ node, level = 0, prices }) => {
                         </div>
                     </div>
                 </div>
-            </div>
+            </Link>
         </div>
     );
 };
