@@ -308,6 +308,34 @@ const AcademyPage = () => {
                                                 </div>
                                             </div>
                                         )}
+                                        {/* Insert ships section if this is the last paragraph of the logistical infrastructure section of module-2 */}
+                                        {currentModule.id === 'module-2' && sect.title.startsWith('Logistical Infrastructure') && pi === 2 && (
+                                            <div className="ships-section-wrapper">
+                                                <h4 className="ships-section-title text-accent">Standard PI Hauling Vessels</h4>
+                                                <div className="hauler-ships-grid">
+                                                    <div className="ship-card glass-panel">
+                                                        <div className="ship-img-wrapper">
+                                                            <img src="/structures/epithal.png" alt="Gallente Epithal Hauler" className="ship-img" />
+                                                            <div className="ship-badge epithal-badge">Gallente</div>
+                                                        </div>
+                                                        <div className="ship-info">
+                                                            <div className="ship-name">Epithal</div>
+                                                            <div className="ship-role">Planetary Commodities Specialist</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="ship-card glass-panel">
+                                                        <div className="ship-img-wrapper">
+                                                            <img src="/structures/squall.png" alt="Upwell Squall Hauler" className="ship-img" />
+                                                            <div className="ship-badge squall-badge">Upwell</div>
+                                                        </div>
+                                                        <div className="ship-info">
+                                                            <div className="ship-name">Squall</div>
+                                                            <div className="ship-role">Flexible Infrastructure Transport</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </section>

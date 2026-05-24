@@ -770,3 +770,112 @@
         padding-left: 0;
     }
 }
+
+/* Shipping Vessels Showcase */
+.ships-section-wrapper {
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    padding: var(--space-md);
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.ships-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: var(--space-xs);
+}
+
+.hauler-ships-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+}
+
+.ship-card {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+}
+
+.ship-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-primary);
+    box-shadow: 0 5px 15px rgba(0, 217, 247, 0.1);
+}
+
+.ship-img-wrapper {
+    position: relative;
+    height: 180px;
+    width: 100%;
+    overflow: hidden;
+    background: #000;
+}
+
+.ship-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.ship-card:hover .ship-img {
+    transform: scale(1.05);
+}
+
+.ship-badge {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    z-index: 1;
+}
+
+.epithal-badge {
+    background: #1c5236;
+    color: #fff;
+}
+
+.squall-badge {
+    background: #f1af09;
+    color: #000;
+}
+
+.ship-info {
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    flex-grow: 1;
+}
+
+.ship-name {
+    font-size: 1.15rem;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+.ship-role {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+@media (max-width: 600px) {
+    .hauler-ships-grid {
+        grid-template-columns: 1fr;
+    }
+}
