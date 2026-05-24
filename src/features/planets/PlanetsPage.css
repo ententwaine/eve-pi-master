@@ -125,7 +125,7 @@
 }
 
 .planet-card.expanded .planet-resources {
-    max-height: 500px;
+    max-height: 1500px;
     opacity: 1;
     margin-top: var(--space-lg);
     padding: var(--space-md);
@@ -168,4 +168,65 @@
 .planet-card.expanded {
     border-color: var(--planet-color);
     background: linear-gradient(180deg, var(--color-bg-panel) 0%, rgba(0,0,0,0.8) 100%);
+}
+
+/* Producible Tiers in Planets Page */
+.producible-section {
+    border-top: 1px dashed var(--color-border);
+    padding-top: var(--space-md);
+}
+
+.tier-heading {
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: var(--space-md) 0 var(--space-xs) 0;
+}
+
+.producible-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-xs);
+}
+
+.producible-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+    text-decoration: none;
+    color: var(--color-text-main);
+}
+
+.producible-item:hover {
+    background: rgba(0, 217, 247, 0.05);
+    border-color: var(--color-primary);
+    transform: translateX(2px);
+}
+
+.producible-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+}
+
+.producible-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.flowchart-link-indicator {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    transition: color 0.2s;
+}
+
+.producible-item:hover .flowchart-link-indicator {
+    color: var(--color-primary);
 }

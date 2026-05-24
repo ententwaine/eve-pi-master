@@ -3,6 +3,30 @@ import { Link } from 'react-router-dom';
 import { planetTypes, commodities } from '../../data/pi_data';
 import './PlanetsPage.css';
 
+// Helper to recursively find all P0 resource IDs required for a commodity
+const getRawIngredients = (commodity, allCommodities) => {
+    if (!commodity.inputs || commodity.inputs.length === 0) {
+        return [commodity.id];
+    }
+    let raws = [];
+    commodity.inputs.forEach(input => {
+        const inputComm = allCommodities.find(c => c.id === input.id);
+        if (inputComm) {
+            raws = raws.concat(getRawIngredients(inputComm, allCommodities));
+        }
+    });
+    return raws;
+};
+
+// Find all P1-P4 commodities that can be made entirely on a planet with the given resources
+const getProducibleCommodities = (planetResources) => {
+    return commodities.filter(comm => {
+        if (comm.tier === 'P0') return false; // P0 is already listed
+        const raws = getRawIngredients(comm, commodities);
+        return raws.every(rawId => planetResources.includes(rawId));
+    });
+};
+
 const PlanetsPage = () => {
     const [expandedPlanet, setExpandedPlanet] = useState(null);
 
@@ -54,7 +78,7 @@ const PlanetsPage = () => {
                                 <h3 style={{ color: planet.color, marginTop: 0, borderBottom: `1px solid ${planet.color}`, paddingBottom: '8px' }}>
                                     Extractable Resources (P0)
                                 </h3>
-                                <div className="resource-list">
+                                <div className="resource-list" style={{ marginBottom: 'var(--space-md)' }}>
                                     {planet.resources.map(resId => {
                                         const res = getCommodityDetails(resId);
                                         if (!res) return null;
@@ -71,6 +95,70 @@ const PlanetsPage = () => {
                                         );
                                     })}
                                 </div>
+
+                                {(() => {
+                                    const producible = getProducibleCommodities(planet.resources);
+                                    const p1List = producible.filter(c => c.tier === 'P1');
+                                    const p2List = producible.filter(c => c.tier === 'P2');
+                                    const p3List = producible.filter(c => c.tier === 'P3');
+                                    const p4List = producible.filter(c => c.tier === 'P4');
+
+                                    const renderProducibleItem = (comm) => (
+                                        <Link to={`/commodity/${comm.id}`} key={comm.id} className="producible-item" title={`View ${comm.name} Flowchart`}>
+                                            <img 
+                                                src={`https://images.evetech.net/types/${comm.id}/icon?size=32`} 
+                                                alt={comm.name}
+                                                className="producible-icon" 
+                                            />
+                                            <span className="producible-name">{comm.name}</span>
+                                            <span className="flowchart-link-indicator">&rarr;</span>
+                                        </Link>
+                                    );
+
+                                    if (producible.length === 0) return null;
+
+                                    return (
+                                        <div className="producible-section" style={{ marginTop: 'var(--space-md)' }}>
+                                            <h3 style={{ color: 'var(--color-accent)', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px', marginBottom: 'var(--space-sm)' }}>
+                                                Single-Planet Producible Tiers (P1 - P4)
+                                            </h3>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)', textAlign: 'left' }}>
+                                                {p1List.length > 0 && (
+                                                    <div>
+                                                        <h4 className="tier-heading text-primary">Processed (P1)</h4>
+                                                        <div className="producible-grid">
+                                                            {p1List.map(renderProducibleItem)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {p2List.length > 0 && (
+                                                    <div>
+                                                        <h4 className="tier-heading text-accent">Refined (P2)</h4>
+                                                        <div className="producible-grid">
+                                                            {p2List.map(renderProducibleItem)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {p3List.length > 0 && (
+                                                    <div>
+                                                        <h4 className="tier-heading" style={{ color: '#ff6666' }}>Specialized (P3)</h4>
+                                                        <div className="producible-grid">
+                                                            {p3List.map(renderProducibleItem)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {p4List.length > 0 && (
+                                                    <div>
+                                                        <h4 className="tier-heading" style={{ color: '#cc66ff' }}>Advanced (P4)</h4>
+                                                        <div className="producible-grid">
+                                                            {p4List.map(renderProducibleItem)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
                     );
