@@ -4,6 +4,8 @@ import TopNav from './components/TopNav';
 import { TradeHubProvider } from './context/TradeHubContext';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ConsultantProvider } from './context/ConsultantContext';
+import FloatingConsultant from './components/FloatingConsultant';
 
 // Placeholders for new pages
 import HomePage from './features/home/HomePage';
@@ -29,32 +31,35 @@ function App() {
         <ThemeProvider>
             <AuthProvider>
                 <TradeHubProvider>
-                    <div className="app-container">
-                        <TopNav />
-                    <main className="main-content">
-                        <Routes>
-                            <Route path="/" element={<HomePage />} />
-                            <Route path="/dashboard" element={<DashboardPage />} />
-                            <Route path="/materials/:tier" element={<MaterialsPage />} />
-                            <Route path="/market" element={<MarketPage />} />
-                            <Route path="/trend" element={<TrendPage />} />
-                            <Route path="/planner" element={<PlannerPage />} />
-                            <Route path="/virtual-planet" element={<VirtualPlanetPage />} />
-                            <Route path="/production-vs" element={<ProductionVsPage />} />
-                            <Route path="/command-center" element={<CommandCenterPage />} />
-                            <Route path="/consultant" element={<ConsultantPage />} />
-                            <Route path="/academy" element={<AcademyPage />} />
-                            <Route path="/planets" element={<PlanetsPage />} />
-                            <Route path="/commodity/:id" element={<CommodityDetailPage />} />
-                            <Route path="/orders/:regionId/:typeId" element={<AllOrdersPage />} />
-                            <Route path="/callback" element={<CallbackPage />} />
-                            <Route path="/settings" element={<SettingsPage />} />
-                        </Routes>
-                    </main>
-                    <Footer />
-                </div>
-            </TradeHubProvider>
-        </AuthProvider>
+                    <ConsultantProvider>
+                        <div className="app-container">
+                            <TopNav />
+                            <main className="main-content">
+                                <Routes>
+                                    <Route path="/" element={<HomePage />} />
+                                    <Route path="/dashboard" element={<DashboardPage />} />
+                                    <Route path="/materials/:tier" element={<MaterialsPage />} />
+                                    <Route path="/market" element={<MarketPage />} />
+                                    <Route path="/trend" element={<TrendPage />} />
+                                    <Route path="/planner" element={<PlannerPage />} />
+                                    <Route path="/virtual-planet" element={<VirtualPlanetPage />} />
+                                    <Route path="/production-vs" element={<ProductionVsPage />} />
+                                    <Route path="/command-center" element={<CommandCenterPage />} />
+                                    <Route path="/consultant" element={<ConsultantPage />} />
+                                    <Route path="/academy" element={<AcademyPage />} />
+                                    <Route path="/planets" element={<PlanetsPage />} />
+                                    <Route path="/commodity/:id" element={<CommodityDetailPage />} />
+                                    <Route path="/orders/:regionId/:typeId" element={<AllOrdersPage />} />
+                                    <Route path="/callback" element={<CallbackPage />} />
+                                    <Route path="/settings" element={<SettingsPage />} />
+                                </Routes>
+                            </main>
+                            <Footer />
+                            <FloatingConsultant />
+                        </div>
+                    </ConsultantProvider>
+                </TradeHubProvider>
+            </AuthProvider>
         </ThemeProvider>
     );
 }
