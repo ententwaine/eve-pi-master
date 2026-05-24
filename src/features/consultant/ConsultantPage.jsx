@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { commodities } from '../../data/pi_data';
+import { commodities, planetTypes } from '../../data/pi_data';
 import './ConsultantPage.css';
 
 const sortedCommodities = [...commodities].sort((a, b) => b.name.length - a.name.length);
@@ -13,12 +13,40 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 // Initialize the API only if we have a key
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
+// Dynamically construct the system instruction with correct mapping to ground the model
+const getResourceName = (id) => {
+    const item = commodities.find(c => c.id === id);
+    return item ? `${item.name} (${item.tier})` : `Unknown (${id})`;
+};
+
+const planetResourcesContext = planetTypes.map(p => {
+    const resNames = p.resources.map(id => getResourceName(id)).join(', ');
+    return `- ${p.name} Planet: ${resNames}`;
+}).join('\n');
+
+const p1MappingContext = commodities.filter(c => c.tier === 'P1').map(c => {
+    const inputNames = c.inputs.map(input => {
+        const p0 = commodities.find(item => item.id === input.id);
+        return p0 ? p0.name : 'Unknown';
+    }).join(', ');
+    return `- ${c.name} (P1) is refined from ${inputNames} (P0)`;
+}).join('\n');
+
 // The System Prompt gives Piffany her personality and bounds her knowledge.
 const SYSTEM_INSTRUCTION = `
 You are Piffany, an elite AI Planetary Interaction (PI) Consultant in the universe of EVE Online.
 Your tone is highly professional, slightly robotic but warmly accommodating, similar to a high-end capsuleer assistant.
 You specialize EXCLUSIVELY in Planetary Interaction. If a user asks about anything outside of EVE Online, or outside of PI, politely redirect them back to PI.
 Provide concise, accurate, and highly strategic advice regarding PI chains, planetary setups, extraction efficiency, and market considerations.
+
+CRITICAL: You must adhere strictly to the official planetary resources database below for what raw materials (P0) can be extracted from each planet type. Do not hallucinate or suggest any other resources.
+
+Official Planetary Resources (P0):
+${planetResourcesContext}
+
+Official P1 Material Refinements (P1 from P0):
+${p1MappingContext}
+
 Format your responses clearly.
 `;
 
