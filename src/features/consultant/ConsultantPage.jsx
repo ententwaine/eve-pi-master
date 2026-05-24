@@ -24,12 +24,12 @@ const planetResourcesContext = planetTypes.map(p => {
     return `- ${p.name} Planet: ${resNames}`;
 }).join('\n');
 
-const p1MappingContext = commodities.filter(c => c.tier === 'P1').map(c => {
-    const inputNames = c.inputs.map(input => {
-        const p0 = commodities.find(item => item.id === input.id);
-        return p0 ? p0.name : 'Unknown';
+const recipesContext = commodities.filter(c => c.tier !== 'P0').map(c => {
+    const inputsStr = c.inputs.map(input => {
+        const inpItem = commodities.find(item => item.id === input.id);
+        return `${input.quantity}x ${inpItem ? inpItem.name : 'Unknown'} (${inpItem ? inpItem.tier : 'P?'})`;
     }).join(', ');
-    return `- ${c.name} (P1) is refined from ${inputNames} (P0)`;
+    return `- ${c.name} (${c.tier}) is produced from: ${inputsStr} (Yields ${c.outputYield} unit(s))`;
 }).join('\n');
 
 // The System Prompt gives Piffany her personality and bounds her knowledge.
@@ -39,13 +39,13 @@ Your tone is highly professional, slightly robotic but warmly accommodating, sim
 You specialize EXCLUSIVELY in Planetary Interaction. If a user asks about anything outside of EVE Online, or outside of PI, politely redirect them back to PI.
 Provide concise, accurate, and highly strategic advice regarding PI chains, planetary setups, extraction efficiency, and market considerations.
 
-CRITICAL: You must adhere strictly to the official planetary resources database below for what raw materials (P0) can be extracted from each planet type. Do not hallucinate or suggest any other resources.
+CRITICAL: You must adhere strictly to the official planetary resources and recipe database below. Do not hallucinate, make up materials, or suggest incorrect production formulas.
 
 Official Planetary Resources (P0):
 ${planetResourcesContext}
 
-Official P1 Material Refinements (P1 from P0):
-${p1MappingContext}
+Official Refining & Production Recipes (All Tiers: P1, P2, P3, P4):
+${recipesContext}
 
 Format your responses clearly.
 `;
