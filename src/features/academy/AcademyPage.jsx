@@ -13,38 +13,42 @@ const colonyStructures = [
     {
         name: "Command Center",
         shortName: "CC",
-        image: "/structures/command_center.png",
-        use: "The core power/CPU anchor. It does not store or process materials directly, but it feeds CPU and Power Grid (PG) to your entire colony. Upgrading the Command Center increases your overall construction budget for factories, link routes, and extractors."
+        use: "The power and CPU core of your colony. It must be deployed and upgraded first. While it does not process or store materials directly, its upgrade level determines the overall resource and CPU budget for the rest of your structures."
     },
     {
         name: "Extractor Control Unit (ECU)",
         shortName: "ECU",
-        image: "/structures/extractor_ecu.png",
-        use: "The mining hub. It extracts raw resources (P0) from the planet. You attach movable extractor heads to the ECU and position them over rich hotspots on the planet's surface scanning overlay to pull raw materials."
+        use: "The mining controller. It is deployed near resource hotspots, and coordinates the extractor heads to draw raw planetary materials (P0) from the ground."
+    },
+    {
+        name: "Extractor Head",
+        shortName: "Head",
+        use: "Movable harvesting nozzles linked to an ECU. You can deploy multiple heads per ECU (budget permitting) and drag them over high-density resource nodes on the planet surface scanner overlay."
     },
     {
         name: "Basic Industry Facility",
         shortName: "Basic Factory",
-        image: "/structures/basic_industry.png",
-        use: "The primary refinery. It processes raw materials (P0) into processed commodities (P1). It consumes 3,000 units of a single raw material to output 20 units of a P1 commodity per 30-minute cycle."
+        use: "Processes raw materials (P0) into processed commodities (P1). It consumes 3,000 units of raw materials per 30-minute cycle to yield 20 units of P1 output."
     },
     {
         name: "Advanced Industry Facility",
         shortName: "Advanced Factory",
-        image: "/structures/advanced_industry.png",
-        use: "The secondary refinery. It synthesizes P2 (refined) or P3 (specialized) commodities. It requires multiple inputs. For example, it consumes two different P1 commodities (40 units each) to produce 5 units of a P2 commodity per 1-hour cycle."
+        use: "Refines commodities into higher tiers. It consumes two different P1 inputs (40 units each) to produce 5 units of P2 commodities, or multiple P2 inputs to produce P3 commodities."
     },
     {
-        name: "Launchpad",
-        shortName: "Launchpad",
-        image: "/structures/launchpad.png",
-        use: "The primary shipping and buffer hub. It stores up to 10,000m³ of commodities and allows you to import and export materials directly to and from the orbiting Customs Office (POCO)."
+        name: "High Tech Production Plant",
+        shortName: "High Tech Factory",
+        use: "The ultimate processing facility. It combines three P3 commodities (or two P3 and one P1) into advanced P4 products (50m³ items). These can only be built on Barren or Temperate planets."
     },
     {
         name: "Storage Facility",
         shortName: "Storage",
-        image: "/structures/storage_facility.png",
-        use: "The storage depot. It stores up to 12,000m³ of commodities, providing a massive buffer to hold raw materials or capture finished products. Unlike the Launchpad, it cannot transfer goods directly to orbit."
+        use: "A specialized warehouse that holds up to 12,000m³ of commodities. Crucial for acting as a buffer to collect raw outputs and prevent processing bottlenecks."
+    },
+    {
+        name: "Launchpad",
+        shortName: "Launchpad",
+        use: "The import/export logistics terminal. It holds up to 10,000m³ of materials and acts as the gatekeeper for launching goods into orbit or transferring them from Customs Offices (POCOs) to the planet surface."
     }
 ];
 
@@ -276,19 +280,23 @@ const AcademyPage = () => {
                                         {currentModule.id === 'module-1' && sect.title === 'PI as a Supply Chain System' && pi === 1 && (
                                             <div className="structures-section-wrapper">
                                                 <h4 className="structures-section-title text-accent">Colony Infrastructure Components</h4>
-                                                <div className="colony-structures-grid">
-                                                    {colonyStructures.map((struct, sIdx) => (
-                                                        <div key={sIdx} className="structure-card glass-panel">
-                                                            <div className="structure-img-wrapper">
-                                                                <img src={struct.image} alt={struct.name} className="structure-img" />
-                                                                <div className="structure-badge">{struct.shortName}</div>
+                                                <div className="colony-structures-layout">
+                                                    <div className="structures-image-container glass-panel">
+                                                        <img src="/structures/planetary_buildings.jpg" alt="EVE Online Planetary Buildings Diagram" className="structures-diagram-img" />
+                                                        <div className="structures-image-caption">Official EVE Online Planetary Structures</div>
+                                                    </div>
+                                                    <div className="structures-details-list">
+                                                        {colonyStructures.map((struct, sIdx) => (
+                                                            <div key={sIdx} className="structure-list-item glass-panel">
+                                                                <div className="struct-list-header">
+                                                                    <span className="struct-list-index">{sIdx + 1}</span>
+                                                                    <span className="struct-list-name">{struct.name}</span>
+                                                                    <span className="struct-list-badge">{struct.shortName}</span>
+                                                                </div>
+                                                                <div className="struct-list-use">{struct.use}</div>
                                                             </div>
-                                                            <div className="structure-info">
-                                                                <div className="structure-name">{struct.name}</div>
-                                                                <div className="structure-use">{struct.use}</div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}

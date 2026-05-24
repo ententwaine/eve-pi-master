@@ -635,76 +635,138 @@
     padding-bottom: var(--space-xs);
 }
 
-.colony-structures-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--space-md);
-}
-
-.structure-card {
-    border-radius: var(--radius-md);
-    overflow: hidden;
+.colony-structures-layout {
     display: flex;
-    flex-direction: column;
-    height: 100%;
-    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    gap: var(--space-lg);
+    align-items: flex-start;
 }
 
-.structure-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--color-primary);
-    box-shadow: 0 5px 15px rgba(0, 217, 247, 0.1);
-}
-
-.structure-img-wrapper {
-    position: relative;
-    height: 180px;
-    width: 100%;
-    overflow: hidden;
-    background: #000;
-}
-
-.structure-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.structure-card:hover .structure-img {
-    transform: scale(1.05);
-}
-
-.structure-badge {
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-    background: var(--color-primary);
-    color: var(--color-bg-base);
-    font-size: 0.7rem;
-    font-weight: bold;
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-    text-transform: uppercase;
-    z-index: 1;
-}
-
-.structure-info {
-    padding: var(--space-md);
+.structures-image-container {
+    width: 280px;
+    flex-shrink: 0;
+    padding: var(--space-sm);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    text-align: center;
+    position: sticky;
+    top: 80px;
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
-    flex-grow: 1;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s, border-color 0.2s;
 }
 
-.structure-name {
-    font-size: 1.1rem;
+.structures-image-container:hover {
+    border-color: rgba(0, 217, 247, 0.3);
+    transform: translateY(-2px);
+}
+
+.structures-diagram-img {
+    width: 100%;
+    height: auto;
+    max-height: 520px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
+
+.structures-image-caption {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.structures-details-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.structure-list-item {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-panel);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.structure-list-item:hover {
+    transform: translateX(6px);
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 217, 247, 0.08);
+}
+
+.struct-list-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.struct-list-index {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: var(--color-bg-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: bold;
-    color: var(--color-primary);
+    font-size: 0.85rem;
+    box-shadow: 0 0 8px rgba(0, 217, 247, 0.4);
 }
 
-.structure-use {
-    font-size: 0.85rem;
+.struct-list-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    flex: 1;
+}
+
+.struct-list-badge {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: var(--color-accent);
+    border: 1px solid rgba(247, 181, 0, 0.3);
+    background: rgba(247, 181, 0, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.struct-list-use {
+    font-size: 0.9rem;
     color: var(--color-text-main);
     line-height: 1.5;
+    padding-left: 32px;
+}
+
+/* Mobile adjustments for the structures layout */
+@media (max-width: 900px) {
+    .colony-structures-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .structures-image-container {
+        width: 100%;
+        max-width: 320px;
+        position: static;
+        margin-bottom: var(--space-md);
+    }
+    
+    .structure-list-item:hover {
+        transform: translateY(-2px);
+    }
+    
+    .struct-list-use {
+        padding-left: 0;
+    }
 }
