@@ -71,7 +71,10 @@ export const academyModules = [
             {
                 title: "Core Skill Progression",
                 paragraphs: [
-                    "Before setting foot on a planet, you should aim for: Command Center Upgrades IV and Interplanetary Consolidation IV. This configuration allows you to operate 5 planets with Level 4 Command Centers, which is the sweet spot for new players.",
+                    "Before setting foot on a planet, you should aim for this critical target setup:",
+                    "• **Command Center Upgrades IV** — Unlocks higher-quality command centers for your colony networks, giving you more CPU and Power Grid budget for extractors, factories, and links.",
+                    "• **Interplanetary Consolidation IV** — Unlocks the ability to manage up to 5 planets simultaneously (base 1 + 4 additional colonies).",
+                    "• **The Sweet Spot Milestone** — Operating 5 planets with Level 4 Command Centers is the highly recommended baseline for new players. It balances ease of management with excellent passive income yields.",
                     "Planetology and Advanced Planetology are also important. They improve the accuracy of your scanner overlays when searching for resources. Without these, you will see 'hotspots' that are actually depleted, wasting extractor efficiency."
                 ]
             },

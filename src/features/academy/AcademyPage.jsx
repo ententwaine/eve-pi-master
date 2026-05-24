@@ -123,25 +123,33 @@ const AcademyPage = () => {
         return commodities.find(c => c.id === id);
     };
 
-    // Parse and auto-link PI commodity keywords inside text blocks
+    // Parse and auto-link PI commodity keywords inside text blocks (supports **bold** parsing)
     const renderLinkedText = (text) => {
         if (!text) return '';
-        const parts = text.split(commodityPattern);
-        return parts.map((part, i) => {
-            const matched = findCommodityByName(part);
-            if (matched) {
-                return (
-                    <Link 
-                        key={i} 
-                        to={`/commodity/${matched.id}`} 
-                        className="text-primary" 
-                        style={{ textDecoration: 'none', fontWeight: 'bold' }}
-                    >
-                        {part}
-                    </Link>
-                );
-            }
-            return part;
+        const boldParts = text.split(/(\*\*.*?\*\*)/g);
+        return boldParts.map((boldPart, bIdx) => {
+            const isBold = boldPart.startsWith('**') && boldPart.endsWith('**');
+            const cleanText = isBold ? boldPart.slice(2, -2) : boldPart;
+            
+            const parts = cleanText.split(commodityPattern);
+            const renderedParts = parts.map((part, i) => {
+                const matched = findCommodityByName(part);
+                if (matched) {
+                    return (
+                        <Link 
+                            key={`${bIdx}-${i}`} 
+                            to={`/commodity/${matched.id}`} 
+                            className="text-primary" 
+                            style={{ textDecoration: 'none', fontWeight: 'bold' }}
+                        >
+                            {part}
+                        </Link>
+                    );
+                }
+                return part;
+            });
+
+            return isBold ? <strong key={bIdx}>{renderedParts}</strong> : <React.Fragment key={bIdx}>{renderedParts}</React.Fragment>;
         });
     };
 
