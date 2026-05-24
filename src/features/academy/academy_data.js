@@ -79,10 +79,11 @@ export const academyModules = [
                 ]
             },
             {
-                title: "Logistical Infrastructure: The Epithal Hauler",
+                title: "Logistical Infrastructure: The Epithal and Upwell Squall",
                 paragraphs: [
-                    "Planetary commodities are bulky. A standard industrial hauler will fill up in a single planet pickup. The Epithal (Gallente Industrial) is the undisputed king of PI logistics.",
-                    "It features a dedicated 'Planetary Commodities Hold' that starts at 45,000m³ capacity and increases by 10% for each level of the Gallente Industrial skill, up to 67,500m³ at Level V. This hold bypasses normal cargo limits and fits only PI materials. It is cheap, easy to train, and vital for operations."
+                    "Planetary commodities are bulky — a standard industrial hauler fills up after a single planet pickup. For years, the Epithal (Gallente Industrial) was the go-to choice for PI logistics. It has a dedicated Planetary Commodities Hold starting at 45,000m³, scaling to 67,500m³ at Gallente Industrial Level V, plus a separate 6,000m³ Command Center hold that fits up to six command centers at once. It's cheap, quick to train into, and easy to fit for survivability.",
+                    "With the Equinox expansion, CCP introduced a strong alternative: the Squall, built by the Upwell Consortium. It matches the Epithal's 45,000m³ base capacity but through a more flexible Infrastructure Hold that accepts PI materials, moon goo, fuel, reagents, and Upwell structure components all at once — a genuine upgrade if your hauling runs involve more than just planetary goods.",
+                    "The other key difference is combat capability. The Epithal is a soft target with no real offensive options, but the Squall can fit weapons — enough to handle NPC light tackle at Skyhooks, which matters now that Skyhooks have replaced POCOs as the primary export point in Equinox space. For high-sec or simple setups, the Epithal still gets the job done. For null-sec, wormhole operations, or mixed cargo runs, the Squall is worth serious consideration."
                 ]
             }
         ],
