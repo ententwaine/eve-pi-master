@@ -8,9 +8,13 @@ let cachedSystems = null;
 function getSystems() {
     if (cachedSystems) return cachedSystems;
     
+    // Resolve relative to process.cwd()
     const csvPath = path.resolve(process.cwd(), 'eve_systems_planets.csv');
+    console.log(`[API Search] Checking CSV at: "${csvPath}"`);
+    console.log(`[API Search] CSV exists: ${fs.existsSync(csvPath)}`);
+    
     if (!fs.existsSync(csvPath)) {
-        console.warn('eve_systems_planets.csv not found at:', csvPath);
+        console.warn('[API Search] Warning: eve_systems_planets.csv not found!');
         return [];
     }
     
@@ -50,10 +54,10 @@ function getSystems() {
         }
         
         cachedSystems = Object.values(systemsMap);
-        console.log(`Loaded ${cachedSystems.length} solar systems from CSV cache.`);
+        console.log(`[API Search] Successfully parsed ${cachedSystems.length} systems from CSV.`);
         return cachedSystems;
     } catch (e) {
-        console.error('Failed to parse eve_systems_planets.csv:', e);
+        console.error('[API Search] Error parsing eve_systems_planets.csv:', e);
         return [];
     }
 }
@@ -65,27 +69,30 @@ export default defineConfig({
         {
             name: 'js-system-lookup',
             configureServer(server) {
-                server.middlewares.use('/api/systems', (req, res) => {
+                // Mount at root level to prevent Connect prefix-stripping matching issues
+                server.middlewares.use((req, res, next) => {
                     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-                    const query = url.searchParams.get('q') || '';
                     
-                    if (!query.trim()) {
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify([]));
+                    if (url.pathname === '/api/systems') {
+                        const query = url.searchParams.get('q') || '';
+                        console.log(`[API Search] Request received for query: "${query}" (req.url: "${req.url}")`);
+                        
+                        const systems = getSystems();
+                        const results = systems
+                            .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .slice(0, 20);
+                        
+                        console.log(`[API Search] Returning ${results.length} matching systems.`);
+                        
+                        res.writeHead(200, { 
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        });
+                        res.end(JSON.stringify(results));
                         return;
                     }
-                    
-                    const systems = getSystems();
-                    const results = systems
-                        .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .slice(0, 20);
-                        
-                    res.writeHead(200, { 
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    });
-                    res.end(JSON.stringify(results));
+                    next();
                 });
             }
         }
