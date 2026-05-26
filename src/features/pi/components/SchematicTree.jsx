@@ -44,9 +44,9 @@ const buildTree = (itemId, quantity = 1) => {
 
     // Calculate inputs
     const children = (item.inputs || []).map(input => {
-        // Formula: (Input Batch / Output Yield) * Target Qty
         const yieldAmount = item.outputYield || 1;
-        const reqQty = (input.quantity / yieldAmount) * quantity;
+        const cycles = Math.ceil(quantity / yieldAmount);
+        const reqQty = cycles * input.quantity;
         return buildTree(input.id, reqQty);
     }).filter(Boolean); // remove nulls
 

@@ -273,9 +273,9 @@ const PlannerPage = () => {
             
             if (tier === 'P0') return;
             
-            const batches = qtyNeeded / (item.outputYield || 1);
+            const cycles = Math.ceil(qtyNeeded / (item.outputYield || 1));
             for (const input of item.inputs) {
-                traverseGlobal(input.id, input.quantity * batches);
+                traverseGlobal(input.id, input.quantity * cycles);
             }
         };
         
@@ -285,9 +285,9 @@ const PlannerPage = () => {
             if (bom[p.tier]) {
                 bom[p.tier][p.id] = (bom[p.tier][p.id] || 0) + targetQty;
             }
-            const batches = targetQty / (p.outputYield || 1);
+            const cycles = Math.ceil(targetQty / (p.outputYield || 1));
             for (const input of p.inputs) {
-                traverseGlobal(input.id, input.quantity * batches);
+                traverseGlobal(input.id, input.quantity * cycles);
             }
         });
 

@@ -15,9 +15,9 @@ const PlanetBreakdown = ({ targetId, hourlyYield = 1 }) => {
             rawRequirements[itemId] = (rawRequirements[itemId] || 0) + qtyNeeded;
             return;
         }
-        const batches = qtyNeeded / (item.outputYield || 1);
+        const cycles = Math.ceil(qtyNeeded / (item.outputYield || 1));
         for (const input of item.inputs) {
-            traverse(input.id, input.quantity * batches);
+            traverse(input.id, input.quantity * cycles);
         }
     };
     traverse(targetItem.id, hourlyYield);
