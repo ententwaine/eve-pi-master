@@ -7,6 +7,7 @@ import PlanetBreakdown from '../pi/components/PlanetBreakdown';
 import PlanetLabel from '../../components/PlanetLabel';
 import { getLowestSellOrder, getHighestBuyOrder } from '../../services/esiApi';
 import { getSavedPiPlanners, savePiPlanner } from '../../utils/storage';
+import { loadSystemsDatabase, searchSystems } from '../../utils/systemLookup';
 
 const PlannerPage = () => {
     const { selectedHub } = useTradeHub();
@@ -24,14 +25,24 @@ const PlannerPage = () => {
     const [currentPlannerId, setCurrentPlannerId] = useState('');
     const [plannerName, setPlannerName] = useState('My PI Planner');
 
-    const [debugLogs, setDebugLogs] = useState([]);
-    const logDebug = (msg) => { 
-        console.log(`[Planner Debug] ${msg}`);
-        setDebugLogs(prev => [...prev.slice(-9), `${new Date().toLocaleTimeString()}: ${msg}`]);
-    };
+    const [systemsDb, setSystemsDb] = useState(null);
+    const [dbError, setDbError] = useState(null);
 
     useEffect(() => {
         setSavedPlanners(getSavedPiPlanners());
+        
+        // Load systems database client-side
+        setIsLoadingSystems(true);
+        loadSystemsDatabase()
+            .then(data => {
+                setSystemsDb(data);
+                setIsLoadingSystems(false);
+            })
+            .catch(err => {
+                console.error("Error loading systems database:", err);
+                setDbError(err.message);
+                setIsLoadingSystems(false);
+            });
     }, []);
 
     const handleSavePlanner = () => {
@@ -97,46 +108,20 @@ const PlannerPage = () => {
             return;
         }
 
-        const controller = new AbortController();
-        const fetchSystems = async () => {
-            setIsLoadingSystems(true);
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const apiBase = (isLocal && window.location.port !== '5173') ? 'http://localhost:5173' : '';
-            const queryUrl = `${apiBase}/api/systems?q=${encodeURIComponent(systemSearch.trim())}`;
-            logDebug(`Fetching: ${queryUrl}`);
-            try {
-                const res = await fetch(queryUrl, {
-                    signal: controller.signal
-                });
-                logDebug(`Status: ${res.status}`);
-                const data = await res.json();
-                logDebug(`Received: ${data.length} items`);
-                setFilteredSystems(data);
-                
-                // Auto-select system if exactly matched
-                const exactMatch = data.find(s => s.name.toLowerCase() === systemSearch.trim().toLowerCase());
-                if (exactMatch) {
-                    logDebug(`Exact match: ${exactMatch.name}`);
-                    setSelectedSystem(exactMatch);
-                }
-            } catch (e) {
-                if (e.name !== 'AbortError') {
-                    logDebug(`Error: ${e.message}`);
-                } else {
-                    logDebug(`Aborted`);
-                }
-            } finally {
-                setIsLoadingSystems(false);
-            }
-        };
+        if (!systemsDb) {
+            setFilteredSystems([]);
+            return;
+        }
 
-        const timeoutId = setTimeout(fetchSystems, 200);
+        const results = searchSystems(systemSearch.trim(), systemsDb);
+        setFilteredSystems(results);
 
-        return () => {
-            clearTimeout(timeoutId);
-            controller.abort();
-        };
-    }, [systemSearch]);
+        // Auto-select system if exactly matched
+        const exactMatch = results.find(s => s.name.toLowerCase() === systemSearch.trim().toLowerCase());
+        if (exactMatch) {
+            setSelectedSystem(exactMatch);
+        }
+    }, [systemSearch, systemsDb]);
 
     // Fetch prices for selected products
     useEffect(() => {
@@ -889,46 +874,7 @@ const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
                 </div>
             )}
 
-            {/* Debug Panel */}
-            <div style={{
-                position: 'fixed',
-                bottom: '10px',
-                right: '10px',
-                background: 'rgba(0,0,0,0.9)',
-                border: '2px solid var(--color-primary, #00d9f7)',
-                padding: '12px',
-                borderRadius: '8px',
-                zIndex: 99999,
-                fontSize: '0.8rem',
-                color: '#fff',
-                width: '320px',
-                fontFamily: 'monospace',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-            }}>
-                <div style={{ fontWeight: 'bold', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>🔍 PLANNER DEBUG PANEL</span>
-                    <span style={{ color: 'var(--color-primary, #00d9f7)' }}>LIVE</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div>URL: <span style={{ color: '#00ffcc' }}>{window.location.host}</span></div>
-                    <div>Search: <span style={{ color: '#ffcc00' }}>"{systemSearch}"</span></div>
-                    <div>isLocal: <span style={{ color: '#ff00aa' }}>{String(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')}</span></div>
-                    <div>Target Port: <span style={{ color: '#00ffcc' }}>5173</span></div>
-                    <div>Target URL: <span style={{ color: '#ff66ff', wordBreak: 'break-all' }}>{
-                        (() => {
-                            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                            const apiBase = (isLocal && window.location.port !== '5173') ? 'http://localhost:5173' : '';
-                            return `${apiBase}/api/systems?q=${encodeURIComponent(systemSearch.trim())}`;
-                        })()
-                    }</span></div>
-                    <div style={{ borderTop: '1px solid #444', marginTop: '6px', paddingTop: '6px', fontWeight: 'bold' }}>Logs:</div>
-                    <div style={{ maxHeight: '120px', overflowY: 'auto', background: 'rgba(0,0,0,0.4)', padding: '4px', borderRadius: '4px', fontSize: '0.75rem' }}>
-                        {debugLogs.length === 0 ? <span style={{ color: '#888' }}>No logs yet...</span> : 
-                            debugLogs.map((log, i) => <div key={i} style={{ borderBottom: '1px solid #222', padding: '2px 0' }}>{log}</div>)
-                        }
-                    </div>
-                </div>
-            </div>
+
         </div>
     );
 };
