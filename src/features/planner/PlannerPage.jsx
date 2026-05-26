@@ -9,6 +9,24 @@ import { getLowestSellOrder, getHighestBuyOrder } from '../../services/esiApi';
 import { getSavedPiPlanners, savePiPlanner } from '../../utils/storage';
 import { loadSystemsDatabase, searchSystems } from '../../utils/systemLookup';
 
+const getP0RequiredForCommodity = (commodityId) => {
+    const item = commodities.find(c => c.id === commodityId);
+    if (!item) return [];
+    if (item.tier === 'P0') return [item.name];
+    
+    let required = [];
+    for (const input of item.inputs) {
+        required.push(...getP0RequiredForCommodity(input.id));
+    }
+    return Array.from(new Set(required));
+};
+
+const canProduceCommodityInSystem = (commodity, possibleP0Names) => {
+    const requiredP0s = getP0RequiredForCommodity(commodity.id);
+    if (requiredP0s.length === 0) return false;
+    return requiredP0s.every(p0 => possibleP0Names.includes(p0));
+};
+
 const PlannerPage = () => {
     const { selectedHub } = useTradeHub();
     const [systemSearch, setSystemSearch] = useState('');
@@ -401,6 +419,57 @@ const PlannerPage = () => {
                                     </span>
                                 ))}
                             </div>
+
+                            {['P1', 'P2', 'P3', 'P4'].map(tier => {
+                                const tierProducts = commodities.filter(c => c.tier === tier && canProduceCommodityInSystem(c, possibleP0Names));
+                                if (tierProducts.length === 0) return null;
+                                
+                                return (
+                                    <div key={tier} style={{ marginTop: 'var(--space-lg)' }}>
+                                        <h4 className="text-muted" style={{ marginBottom: 'var(--space-sm)' }}>Possible {tier} Products</h4>
+                                        <div style={{ display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap' }}>
+                                            {tierProducts.map(p => {
+                                                const isAlreadyAdded = selectedProducts.some(sp => sp.id === p.id);
+                                                return (
+                                                    <button
+                                                        key={p.id}
+                                                        onClick={() => handleAddProduct(p)}
+                                                        title={isAlreadyAdded ? "Already added to planner" : `Click to add ${p.name} to planner`}
+                                                        style={{
+                                                            fontSize: '0.8rem',
+                                                            background: isAlreadyAdded ? 'rgba(0, 217, 247, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                                            color: isAlreadyAdded ? 'var(--color-primary)' : 'var(--color-text-main)',
+                                                            border: isAlreadyAdded ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center'
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            if (!isAlreadyAdded) {
+                                                                e.currentTarget.style.background = 'rgba(0, 217, 247, 0.15)';
+                                                                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                                                e.currentTarget.style.color = 'var(--color-primary)';
+                                                            }
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            if (!isAlreadyAdded) {
+                                                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                                e.currentTarget.style.borderColor = 'var(--color-border)';
+                                                                e.currentTarget.style.color = 'var(--color-text-main)';
+                                                            }
+                                                        }}
+                                                    >
+                                                        {p.name}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
