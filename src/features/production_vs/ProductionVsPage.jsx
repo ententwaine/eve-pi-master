@@ -79,15 +79,15 @@ const ProductionVsPage = () => {
         return new Intl.NumberFormat('en-US', { style: 'decimal', maximumFractionDigits: 2 }).format(value);
     };
 
-    // Helper: P1 factories run every 30m (48 cycles/day). Output is 20 per cycle = 960/day
-    // P2 factories run every 60m (24 cycles/day). Output is 5 per cycle = 120/day
-    // P3 factories run every 60m (24 cycles/day). Output is 3 per cycle = 72/day
+    // Helper: P1 factories run every 30m (48 cycles/day). Output is 40 per cycle = 1920/day
+    // P2 factories run every 60m (24 cycles/day). Output is 20 per cycle = 480/day
+    // P3 factories run every 60m (24 cycles/day). Output is 6 per cycle = 144/day
     // P4 factories run every 60m (24 cycles/day). Output is 1 per cycle = 24/day
     const getUnitsPerDay = (tier) => {
         switch(tier) {
-            case 'P1': return 960;
-            case 'P2': return 120;
-            case 'P3': return 72;
+            case 'P1': return 1920;
+            case 'P2': return 480;
+            case 'P3': return 144;
             case 'P4': return 24;
             default: return 0;
         }
