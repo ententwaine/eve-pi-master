@@ -7,6 +7,10 @@ const PlanetBreakdown = ({ targetId, hourlyYield = 1 }) => {
     
     if (!targetItem || targetItem.tier === 'P0') return null;
 
+    const yieldAmount = targetItem.outputYield || 1;
+    const targetCycles = Math.ceil(hourlyYield / yieldAmount);
+    const targetProducedQty = targetCycles * yieldAmount;
+
     let rawRequirements = {};
     const traverse = (itemId, qtyNeeded) => {
         const item = commodities.find(c => c.id === itemId);
@@ -26,7 +30,7 @@ const PlanetBreakdown = ({ targetId, hourlyYield = 1 }) => {
         <div style={{ marginTop: 'var(--space-md)' }}>
             <h3 style={{ marginTop: 0, marginBottom: 'var(--space-md)' }}>Planet Extraction Requirements</h3>
             <p className="text-muted" style={{ marginBottom: 'var(--space-lg)' }}>
-                To sustain 1 hour of factory cycles for <strong>{targetItem.name}</strong> ({hourlyYield} units/hr), you need to extract the following raw P0 materials per hour:
+                To sustain 1 hour of factory cycles for <strong>{targetItem.name}</strong> ({targetProducedQty} units/hr produced), you need to extract the following raw P0 materials per hour:
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-md)' }}>
                 {Object.entries(rawRequirements).map(([p0Id, qty]) => {

@@ -281,11 +281,13 @@ const PlannerPage = () => {
         
         selectedProducts.forEach(p => {
             const targetQty = targetQuantities[p.id] || 1;
+            const yieldAmount = p.outputYield || 1;
+            const cycles = Math.ceil(targetQty / yieldAmount);
+            const producedQty = cycles * yieldAmount;
             // First add the target product itself
             if (bom[p.tier]) {
-                bom[p.tier][p.id] = (bom[p.tier][p.id] || 0) + targetQty;
+                bom[p.tier][p.id] = (bom[p.tier][p.id] || 0) + producedQty;
             }
-            const cycles = Math.ceil(targetQty / (p.outputYield || 1));
             for (const input of p.inputs) {
                 traverseGlobal(input.id, input.quantity * cycles);
             }

@@ -15,8 +15,12 @@ export const calculateSchematicChain = (targetId, quantity = 1) => {
 
     const steps = [];
 
+    const yieldAmount = targetItem.outputYield || 1;
+    const cycles = Math.ceil(Number(quantity) / yieldAmount);
+    const producedQty = cycles * yieldAmount;
+
     // Step 0: The Target
-    steps.push([{ ...targetItem, quantity: Number(quantity) }]);
+    steps.push([{ ...targetItem, quantity: producedQty }]);
 
     let currentStepItems = steps[0];
 
