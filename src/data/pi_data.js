@@ -139,10 +139,10 @@ export const RESOURCE_TO_PLANETS = {
     2288: ["Barren", "Oceanic", "Temperate"], // Carbon Compounds
     2287: ["Oceanic", "Temperate"], // Complex Organisms
     2307: ["Lava"], // Felsic Magma
-    2272: ["Lava", "Plasma"], // Heavy Metals
+    2272: ["Ice", "Lava", "Plasma"], // Heavy Metals
     2309: ["Storm"], // Ionic Solutions
     2073: ["Barren", "Ice", "Oceanic", "Temperate"], // Microorganisms
-    2310: [], // Noble Gas
+    2310: ["Ice"], // Noble Gas
     2270: ["Barren", "Gas", "Plasma", "Storm"], // Noble Metals
     2306: ["Lava", "Plasma"], // Non-CS Crystals
     2286: ["Ice", "Oceanic"], // Planktic Colonies
@@ -153,7 +153,7 @@ export const RESOURCE_TO_PLANETS = {
 export const PLANET_RESOURCES = {
     Barren: [2267, 2288, 2073, 2270],
     Gas: [2268, 2267, 2270, 2311],
-    Ice: [2268, 2073, 2286],
+    Ice: [2268, 2272, 2073, 2310, 2286],
     Lava: [2267, 2307, 2272, 2306, 2308],
     Oceanic: [2268, 2288, 2073, 2286, 2287],
     Plasma: [2267, 2272, 2270, 2306, 2308],
