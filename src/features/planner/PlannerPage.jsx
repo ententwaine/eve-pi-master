@@ -94,21 +94,26 @@ const PlannerPage = () => {
         const controller = new AbortController();
         const fetchSystems = async () => {
             setIsLoadingSystems(true);
+            const queryUrl = `/api/systems?q=${encodeURIComponent(systemSearch.trim())}`;
+            console.log(`[Planner Search] Fetching from URL: "${queryUrl}"`);
             try {
-                const res = await fetch(`/api/systems?q=${encodeURIComponent(systemSearch.trim())}`, {
+                const res = await fetch(queryUrl, {
                     signal: controller.signal
                 });
+                console.log(`[Planner Search] Response status: ${res.status}`);
                 const data = await res.json();
+                console.log(`[Planner Search] Received data:`, data);
                 setFilteredSystems(data);
                 
                 // Auto-select system if exactly matched
                 const exactMatch = data.find(s => s.name.toLowerCase() === systemSearch.trim().toLowerCase());
                 if (exactMatch) {
+                    console.log(`[Planner Search] Auto-selected exact match: ${exactMatch.name}`);
                     setSelectedSystem(exactMatch);
                 }
             } catch (e) {
                 if (e.name !== 'AbortError') {
-                    console.error("Failed to fetch systems:", e);
+                    console.error("[Planner Search] Failed to fetch systems:", e);
                 }
             } finally {
                 setIsLoadingSystems(false);
