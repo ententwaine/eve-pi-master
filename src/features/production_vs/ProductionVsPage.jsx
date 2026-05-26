@@ -86,8 +86,8 @@ const ProductionVsPage = () => {
     const getUnitsPerDay = (tier) => {
         switch(tier) {
             case 'P1': return 960;
-            case 'P2': return 240;
-            case 'P3': return 144;
+            case 'P2': return 120;
+            case 'P3': return 72;
             case 'P4': return 24;
             default: return 0;
         }

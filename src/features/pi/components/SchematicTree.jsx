@@ -21,9 +21,9 @@ const formatTime = (tier, quantity) => {
     if (tier === 'P0' || !quantity) return '';
     let cycleMinutes = 60;
     let batchSize = 1;
-    if (tier === 'P1') { cycleMinutes = 60; batchSize = 40; }
-    else if (tier === 'P2') { cycleMinutes = 60; batchSize = 10; }
-    else if (tier === 'P3') { cycleMinutes = 60; batchSize = 6; }
+    if (tier === 'P1') { cycleMinutes = 30; batchSize = 20; }
+    else if (tier === 'P2') { cycleMinutes = 60; batchSize = 5; }
+    else if (tier === 'P3') { cycleMinutes = 60; batchSize = 3; }
     else if (tier === 'P4') { cycleMinutes = 60; batchSize = 1; }
     
     const totalMinutes = Math.round((quantity / batchSize) * cycleMinutes);
