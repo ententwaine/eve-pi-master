@@ -1006,7 +1006,7 @@ const PlannerPage = () => {
             {/* Accounting Summary section added below Planet Extraction Requirements */}
             {summaryByTier && (
                 <div className="glass-panel" style={{ marginTop: 'var(--space-lg)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-lg)' }}>
-                    <h3 style={{ marginTop: 0, marginBottom: 'var(--space-md)' }}>Accounting Summary ({timeframe === 'hour' ? 'Hourly' : timeframe === 'day' ? 'Daily' : timeframe === 'week' ? 'Weekly' : 'Monthly (4w)'})</h3>
+                    <h3 style={{ marginTop: 0, marginBottom: 'var(--space-md)' }}>Acounting Summary ({timeframe === 'hour' ? 'Hourly' : timeframe === 'day' ? 'Daily' : timeframe === 'week' ? 'Weekly' : 'Monthly (4w)'})</h3>
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
@@ -1049,6 +1049,27 @@ const PlannerPage = () => {
                                             {((summaryByTier.volumes?.[tier] || 0) * multiplier).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³
                                         </span>
                                     </div>
+
+                                    {tier === product.tier && (
+                                        <div style={{ marginTop: '12px', borderTop: '1px dashed rgba(255,255,255,0.15)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                                <span>Hourly ISK:</span>
+                                                <span style={{ fontFamily: 'monospace', color: 'var(--color-text-main)' }}>{formatSummaryISK(summaryByTier.sums[tier])}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                                <span>Daily ISK:</span>
+                                                <span style={{ fontFamily: 'monospace', color: 'var(--color-text-main)' }}>{formatSummaryISK(summaryByTier.sums[tier] * 24)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                                <span>Weekly ISK:</span>
+                                                <span style={{ fontFamily: 'monospace', color: 'var(--color-text-main)' }}>{formatSummaryISK(summaryByTier.sums[tier] * 168)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                                <span>Monthly ISK (4w):</span>
+                                                <span style={{ fontFamily: 'monospace', color: 'var(--color-text-main)' }}>{formatSummaryISK(summaryByTier.sums[tier] * 672)}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
