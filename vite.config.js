@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'fs'
 import path from 'path'
+import url from 'url'
 
 let cachedSystems = null;
 
@@ -71,25 +72,34 @@ export default defineConfig({
             configureServer(server) {
                 // Mount at root level to prevent Connect prefix-stripping matching issues
                 server.middlewares.use((req, res, next) => {
-                    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-                    
-                    if (url.pathname === '/api/systems') {
-                        const query = url.searchParams.get('q') || '';
-                        console.log(`[API Search] Request received for query: "${query}" (req.url: "${req.url}")`);
+                    try {
+                        const parsedUrl = url.parse(req.url, true);
                         
-                        const systems = getSystems();
-                        const results = systems
-                            .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .slice(0, 20);
-                        
-                        console.log(`[API Search] Returning ${results.length} matching systems.`);
-                        
-                        res.writeHead(200, { 
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        });
-                        res.end(JSON.stringify(results));
+                        if (parsedUrl.pathname === '/api/systems') {
+                            const query = parsedUrl.query.q || '';
+                            console.log(`[API Search] Request received for query: "${query}" (req.url: "${req.url}")`);
+                            
+                            const systems = getSystems();
+                            const results = systems
+                                .filter(s => s.name.toLowerCase().includes(String(query).toLowerCase()))
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .slice(0, 20);
+                            
+                            console.log(`[API Search] Returning ${results.length} matching systems.`);
+                            
+                            res.writeHead(200, { 
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            });
+                            res.end(JSON.stringify(results));
+                            return;
+                        }
+                    } catch (err) {
+                        console.error('[API Search] Error handling search request:', err);
+                        try {
+                            res.writeHead(500, { 'Content-Type': 'application/json' });
+                            res.end(JSON.stringify({ error: 'Server error' }));
+                        } catch (e) {}
                         return;
                     }
                     next();
