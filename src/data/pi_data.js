@@ -154,13 +154,25 @@ export const RESOURCE_TO_PLANETS = {
     16273: ["Ice"], // Liquid Ozone
 };
 
+export const PLANET_RESOURCES = {
+    Barren: [2268, 2267, 2288, 2073, 2270],
+    Gas: [2268, 2267, 2310, 2309, 2270, 2311],
+    Ice: [2268, 16272, 16273, 2073, 2286],
+    Lava: [2267, 2307, 2272, 2306, 2308],
+    Oceanic: [2268, 2288, 2073, 2286, 2287],
+    Plasma: [2267, 2272, 2270, 2306, 2308],
+    Storm: [2268, 2267, 2309, 2270, 2308],
+    Temperate: [2268, 2305, 2288, 2287, 2073]
+};
+
 export const planetTypes = [
-    { id: 2015, name: "Barren", image: "/planet_icons/barren.jpg", color: "var(--color-primary)", description: "Desolate and lifeless, featuring minimal atmospheric conditions.", resources: [2268, 2267, 2288, 2073, 2270] },
-    { id: 13, name: "Gas", image: "/planet_icons/gas.png", color: "#66ffcc", description: "Vast gas giants with dense, stormy atmospheres.", resources: [2268, 2267, 2310, 2309, 2270, 2311] },
-    { id: 12, name: "Ice", image: "/planet_icons/ice.png", color: "#ccffff", description: "Frozen worlds covered entirely by thick glacial sheets.", resources: [2268, 16272, 16273, 2073, 2286] },
-    { id: 2014, name: "Lava", image: "/planet_icons/lava.png", color: "#ff6600", description: "Volcanically hyper-active worlds with oceans of molten rock.", resources: [2267, 2307, 2272, 2306, 2308] },
-    { id: 14, name: "Oceanic", image: "/planet_icons/oceanic.png", color: "#3399ff", description: "Worlds entirely enveloped by deep global oceans.", resources: [2268, 2288, 2073, 2286, 2287] },
-    { id: 2017, name: "Plasma", image: "/planet_icons/plasma.png", color: "#ff33cc", description: "Scorched planets bathed in intense radiation and plasma storms.", resources: [2267, 2272, 2270, 2306, 2308] },
-    { id: 2016, name: "Storm", image: "/planet_icons/storm.jpg", color: "#ffcc00", description: "Turbulent worlds defined by violent global weather systems.", resources: [2268, 2267, 2309, 2270, 2308] },
-    { id: 11, name: "Temperate", image: "/planet_icons/temperate.jpg", color: "#66ff66", description: "Lush, life-bearing worlds with stable climates.", resources: [2268, 2305, 2288, 2287, 2073] }
+    { id: 2015, name: "Barren", image: "/planet_icons/barren.jpg", color: "var(--color-primary)", description: "Desolate and lifeless, featuring minimal atmospheric conditions.", resources: PLANET_RESOURCES["Barren"] },
+    { id: 13, name: "Gas", image: "/planet_icons/gas.png", color: "#66ffcc", description: "Vast gas giants with dense, stormy atmospheres.", resources: PLANET_RESOURCES["Gas"] },
+    { id: 12, name: "Ice", image: "/planet_icons/ice.png", color: "#ccffff", description: "Frozen worlds covered entirely by thick glacial sheets.", resources: PLANET_RESOURCES["Ice"] },
+    { id: 2014, name: "Lava", image: "/planet_icons/lava.png", color: "#ff6600", description: "Volcanically hyper-active worlds with oceans of molten rock.", resources: PLANET_RESOURCES["Lava"] },
+    { id: 14, name: "Oceanic", image: "/planet_icons/oceanic.png", color: "#3399ff", description: "Worlds entirely enveloped by deep global oceans.", resources: PLANET_RESOURCES["Oceanic"] },
+    { id: 2017, name: "Plasma", image: "/planet_icons/plasma.png", color: "#ff33cc", description: "Scorched planets bathed in intense radiation and plasma storms.", resources: PLANET_RESOURCES["Plasma"] },
+    { id: 2016, name: "Storm", image: "/planet_icons/storm.jpg", color: "#ffcc00", description: "Turbulent worlds defined by violent global weather systems.", resources: PLANET_RESOURCES["Storm"] },
+    { id: 11, name: "Temperate", image: "/planet_icons/temperate.jpg", color: "#66ff66", description: "Lush, life-bearing worlds with stable climates.", resources: PLANET_RESOURCES["Temperate"] }
 ];
+

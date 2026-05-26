@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { planetTypes, commodities } from '../../data/pi_data';
+import { planetTypes, commodities, PLANET_RESOURCES } from '../../data/pi_data';
 import './PlanetsPage.css';
 
 // Helper to recursively find all P0 resource IDs required for a commodity
@@ -53,6 +53,7 @@ const PlanetsPage = () => {
             <div className="planets-grid">
                 {planetTypes.map((planet) => {
                     const isExpanded = expandedPlanet === planet.id;
+                    const planetResources = PLANET_RESOURCES[planet.name] || [];
                     
                     return (
                         <div 
@@ -79,7 +80,7 @@ const PlanetsPage = () => {
                                     Extractable Resources (P0)
                                 </h3>
                                 <div className="resource-list" style={{ marginBottom: 'var(--space-md)' }}>
-                                    {planet.resources.map(resId => {
+                                    {planetResources.map(resId => {
                                         const res = getCommodityDetails(resId);
                                         if (!res) return null;
                                         return (
@@ -97,7 +98,7 @@ const PlanetsPage = () => {
                                 </div>
 
                                 {(() => {
-                                    const producible = getProducibleCommodities(planet.resources);
+                                    const producible = getProducibleCommodities(planetResources);
                                     const p1List = producible.filter(c => c.tier === 'P1');
                                     const p2List = producible.filter(c => c.tier === 'P2');
                                     const p3List = producible.filter(c => c.tier === 'P3');
