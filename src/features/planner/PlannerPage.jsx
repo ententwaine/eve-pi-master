@@ -31,6 +31,8 @@ const PlannerPage = () => {
     const { selectedHub } = useTradeHub();
     const [systemSearch, setSystemSearch] = useState('');
     const [selectedSystem, setSelectedSystem] = useState(null);
+    const [selectedPlanetNames, setSelectedPlanetNames] = useState([]);
+    const [lastSystemName, setLastSystemName] = useState('');
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [productSearch, setProductSearch] = useState('');
     const [productPrices, setProductPrices] = useState({});
@@ -45,6 +47,16 @@ const PlannerPage = () => {
 
     const [systemsDb, setSystemsDb] = useState(null);
     const [dbError, setDbError] = useState(null);
+
+    useEffect(() => {
+        if (selectedSystem && selectedSystem.name !== lastSystemName) {
+            setLastSystemName(selectedSystem.name);
+            setSelectedPlanetNames(selectedSystem.planets.map(p => p.name));
+        } else if (!selectedSystem) {
+            setLastSystemName('');
+            setSelectedPlanetNames([]);
+        }
+    }, [selectedSystem, lastSystemName]);
 
     useEffect(() => {
         setSavedPlanners(getSavedPiPlanners());
@@ -75,6 +87,7 @@ const PlannerPage = () => {
             data: {
                 systemSearch,
                 selectedSystem,
+                selectedPlanetNames,
                 selectedProducts,
                 targetQuantities,
                 planetConfigs
@@ -93,6 +106,8 @@ const PlannerPage = () => {
             setPlannerName('My PI Planner');
             setSystemSearch('');
             setSelectedSystem(null);
+            setSelectedPlanetNames([]);
+            setLastSystemName('');
             setSelectedProducts([]);
             setTargetQuantities({});
             setPlanetConfigs({});
@@ -104,7 +119,12 @@ const PlannerPage = () => {
             setCurrentPlannerId(planner.id);
             setPlannerName(planner.name);
             setSystemSearch(planner.data.systemSearch || '');
-            setSelectedSystem(planner.data.selectedSystem || null);
+            
+            const sys = planner.data.selectedSystem || null;
+            setSelectedSystem(sys);
+            setLastSystemName(sys ? sys.name : '');
+            setSelectedPlanetNames(planner.data.selectedPlanetNames || (sys ? sys.planets.map(p => p.name) : []));
+            
             setSelectedProducts(planner.data.selectedProducts || []);
             setTargetQuantities(planner.data.targetQuantities || {});
             setPlanetConfigs(planner.data.planetConfigs || {});
@@ -191,8 +211,8 @@ const PlannerPage = () => {
         return () => { isMounted = false; };
     }, [selectedProducts, selectedHub]);
 
-    // Calculate possible P0 commodities based on system planets
-    const availablePlanets = selectedSystem ? selectedSystem.planets : [];
+    // Calculate possible P0 commodities based on system planets (only selected ones)
+    const availablePlanets = selectedSystem ? selectedSystem.planets.filter(p => selectedPlanetNames.includes(p.name)) : [];
     const availablePlanetTypes = Array.from(new Set(availablePlanets.map(p => p.type)));
     
     const possibleP0Names = Object.keys(extractablePlanetsMap).filter(p0 => {
@@ -274,7 +294,7 @@ const PlannerPage = () => {
         if (!selectedSystem || !flatBomItems.length) return 0;
         
         let tax = 0;
-        selectedSystem.planets.forEach(planet => {
+        availablePlanets.forEach(planet => {
             const config = planetConfigs[planet.name];
             if (!config) return;
             
@@ -295,7 +315,7 @@ const PlannerPage = () => {
             });
         });
         return tax;
-    }, [selectedSystem, planetConfigs, flatBomItems]);
+    }, [availablePlanets, planetConfigs, flatBomItems]);
 
     const updatePlanetConfig = (planetName, key, value) => {
         setPlanetConfigs(prev => ({
@@ -399,17 +419,56 @@ const PlannerPage = () => {
 
                     {selectedSystem && (
                         <div style={{ marginTop: 'var(--space-lg)' }}>
-                            <h4 className="text-muted">Available Planets</h4>
-                            <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap', marginTop: 'var(--space-sm)' }}>
-                                {selectedSystem.planets.map(p => (
-                                    <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', background: 'rgba(255,255,255,0.05)', padding: 'var(--space-sm)', borderRadius: 'var(--radius-sm)' }}>
-                                        <PlanetLabel planetName={p.type} size={24} style={{ background: 'transparent', border: 'none', padding: 0 }} />
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                            <span style={{ fontWeight: 'bold' }}>{p.name}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                             <h4 className="text-muted">Available Planets</h4>
+                             <p className="text-muted" style={{ fontSize: '0.8rem', margin: '4px 0 var(--space-sm) 0' }}>Click to select/deselect planets to plan your chain</p>
+                             <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap', marginTop: 'var(--space-sm)' }}>
+                                 {selectedSystem.planets.map(p => {
+                                     const isSelected = selectedPlanetNames.includes(p.name);
+                                     return (
+                                         <div 
+                                             key={p.name} 
+                                             onClick={() => {
+                                                 if (isSelected) {
+                                                     setSelectedPlanetNames(selectedPlanetNames.filter(name => name !== p.name));
+                                                 } else {
+                                                     setSelectedPlanetNames([...selectedPlanetNames, p.name]);
+                                                 }
+                                             }}
+                                             title={isSelected ? "Click to deselect planet" : "Click to select planet"}
+                                             style={{ 
+                                                 display: 'flex', 
+                                                 alignItems: 'center', 
+                                                 gap: 'var(--space-sm)', 
+                                                 background: isSelected ? 'rgba(0, 217, 247, 0.1)' : 'rgba(0,0,0,0.3)', 
+                                                 border: isSelected ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.05)',
+                                                 padding: 'var(--space-sm)', 
+                                                 borderRadius: 'var(--radius-sm)',
+                                                 cursor: 'pointer',
+                                                 opacity: isSelected ? 1 : 0.5,
+                                                 transition: 'all 0.2s ease',
+                                                 userSelect: 'none'
+                                             }}
+                                             onMouseEnter={(e) => {
+                                                 e.currentTarget.style.opacity = '1';
+                                                 if (!isSelected) {
+                                                     e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                                                 }
+                                             }}
+                                             onMouseLeave={(e) => {
+                                                 e.currentTarget.style.opacity = isSelected ? '1' : '0.5';
+                                                 if (!isSelected) {
+                                                     e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+                                                 }
+                                             }}
+                                         >
+                                             <PlanetLabel planetName={p.type} size={24} style={{ background: 'transparent', border: 'none', padding: 0 }} />
+                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                 <span style={{ fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? 'white' : 'var(--color-text-muted)' }}>{p.name}</span>
+                                             </div>
+                                         </div>
+                                     );
+                                 })}
+                             </div>
 
                             <h4 className="text-muted" style={{ marginTop: 'var(--space-lg)' }}>Extractable Resources (P0)</h4>
                             <div style={{ display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap', marginTop: 'var(--space-sm)' }}>
@@ -563,11 +622,11 @@ const PlannerPage = () => {
 
             
             {/* Production Planets Configuration */}
-            {selectedSystem && selectedProducts.length > 0 && (
+            {selectedSystem && selectedProducts.length > 0 && availablePlanets.length > 0 && (
                 <div className="glass-panel" style={{ marginTop: 'var(--space-xl)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)' }}>
                     <h2 style={{ marginBottom: 'var(--space-md)', fontWeight: 300 }}>Production Planets</h2>
                     <p className="text-muted" style={{ marginBottom: 'var(--space-md)' }}>Configure Customs Office taxes and import/export commodities for each planet.</p>
-                    {selectedSystem.planets.map(planet => {
+                    {availablePlanets.map(planet => {
                         const config = planetConfigs[planet.name] || { taxRate: 10, imports: [], exports: [] };
                         return (
                             <div key={planet.name} style={{ marginBottom: 'var(--space-md)', padding: 'var(--space-md)', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
@@ -722,7 +781,9 @@ const PlannerPage = () => {
                                         <>
                                             {rows}
                                             
-                                            {Object.entries(planetConfigs).map(([planetName, config]) => {
+                                            {Object.entries(planetConfigs)
+                                                .filter(([planetName]) => selectedPlanetNames.includes(planetName))
+                                                .map(([planetName, config]) => {
                                                 let planetTax = 0;
                                                 const rate = (config.taxRate ?? 10) / 100;
                                                 (config.imports || []).forEach(itemId => {
