@@ -33,10 +33,10 @@ export const calculateSchematicChain = (targetId, quantity = 1) => {
 
             hasInputs = true;
 
+            const yieldAmount = masterRecord.outputYield || 1;
+            const cycles = Math.ceil(item.quantity / yieldAmount);
             for (const input of masterRecord.inputs) {
-                // Formula: (Batch Input Qty / Batch Output Yield) * Target Quantity
-                const yieldAmount = masterRecord.outputYield || 1;
-                const totalReq = (input.quantity / yieldAmount) * item.quantity;
+                const totalReq = cycles * input.quantity;
 
                 const existing = nextStepMap.get(input.id) || 0;
                 nextStepMap.set(input.id, existing + totalReq);
