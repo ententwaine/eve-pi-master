@@ -62,7 +62,6 @@ export const commodities = [
     { id: 2286, name: "Planktic Colonies", tier: "P0", inputs: [], outputYield: 1 },
     { id: 2311, name: "Reactive Gas", tier: "P0", inputs: [], outputYield: 1 },
     { id: 2308, name: "Suspended Plasma", tier: "P0", inputs: [], outputYield: 1 },
-    { id: 2410, name: "Hydrogen Bayard", tier: "P0", inputs: [], outputYield: 1 },
     { id: 16272, name: "Heavy Water", tier: "P0", inputs: [], outputYield: 1 },
     { id: 16273, name: "Liquid Ozone", tier: "P0", inputs: [], outputYield: 1 },
         { id: 3645, name: "Water", tier: "P1", inputs: [{ id: 2268, quantity: 3000 }], outputYield: 20 },
@@ -136,7 +135,7 @@ export const commodities = [
 ];
 
 export const RESOURCE_TO_PLANETS = {
-    2268: ["Gas", "Ice", "Oceanic", "Storm", "Temperate"], // Aqueous Liquids
+    2268: ["Barren", "Gas", "Ice", "Oceanic", "Storm", "Temperate"], // Aqueous Liquids
     2305: ["Temperate"], // Autotrophs
     2267: ["Barren", "Gas", "Lava", "Plasma", "Storm"], // Base Metals
     2288: ["Barren", "Oceanic", "Temperate"], // Carbon Compounds
@@ -145,20 +144,19 @@ export const RESOURCE_TO_PLANETS = {
     2272: ["Lava", "Plasma"], // Heavy Metals
     2309: ["Gas", "Storm"], // Ionic Solutions
     2073: ["Barren", "Ice", "Oceanic", "Temperate"], // Microorganisms
-    2310: [], // Noble Gas
+    2310: ["Gas"], // Noble Gas
     2270: ["Barren", "Gas", "Plasma", "Storm"], // Noble Metals
     2306: ["Lava", "Plasma"], // Non-CS Crystals
     2286: ["Ice", "Oceanic"], // Planktic Colonies
     2311: ["Gas"], // Reactive Gas
     2308: ["Lava", "Plasma", "Storm"], // Suspended Plasma
-    2410: ["Gas"], // Hydrogen Bayard
     16272: ["Ice"], // Heavy Water
     16273: ["Ice"], // Liquid Ozone
 };
 
 export const planetTypes = [
-    { id: 2015, name: "Barren", image: "/planet_icons/barren.jpg", color: "var(--color-primary)", description: "Desolate and lifeless, featuring minimal atmospheric conditions.", resources: [2267, 2288, 2073, 2270] },
-    { id: 13, name: "Gas", image: "/planet_icons/gas.png", color: "#66ffcc", description: "Vast gas giants with dense, stormy atmospheres.", resources: [2268, 2267, 2410, 2309, 2270, 2311] },
+    { id: 2015, name: "Barren", image: "/planet_icons/barren.jpg", color: "var(--color-primary)", description: "Desolate and lifeless, featuring minimal atmospheric conditions.", resources: [2268, 2267, 2288, 2073, 2270] },
+    { id: 13, name: "Gas", image: "/planet_icons/gas.png", color: "#66ffcc", description: "Vast gas giants with dense, stormy atmospheres.", resources: [2268, 2267, 2310, 2309, 2270, 2311] },
     { id: 12, name: "Ice", image: "/planet_icons/ice.png", color: "#ccffff", description: "Frozen worlds covered entirely by thick glacial sheets.", resources: [2268, 16272, 16273, 2073, 2286] },
     { id: 2014, name: "Lava", image: "/planet_icons/lava.png", color: "#ff6600", description: "Volcanically hyper-active worlds with oceans of molten rock.", resources: [2267, 2307, 2272, 2306, 2308] },
     { id: 14, name: "Oceanic", image: "/planet_icons/oceanic.png", color: "#3399ff", description: "Worlds entirely enveloped by deep global oceans.", resources: [2268, 2288, 2073, 2286, 2287] },
