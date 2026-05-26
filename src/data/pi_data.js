@@ -62,8 +62,6 @@ export const commodities = [
     { id: 2286, name: "Planktic Colonies", tier: "P0", inputs: [], outputYield: 1 },
     { id: 2311, name: "Reactive Gas", tier: "P0", inputs: [], outputYield: 1 },
     { id: 2308, name: "Suspended Plasma", tier: "P0", inputs: [], outputYield: 1 },
-    { id: 16272, name: "Heavy Water", tier: "P0", inputs: [], outputYield: 1 },
-    { id: 16273, name: "Liquid Ozone", tier: "P0", inputs: [], outputYield: 1 },
         { id: 3645, name: "Water", tier: "P1", inputs: [{ id: 2268, quantity: 3000 }], outputYield: 20 },
         { id: 2397, name: "Industrial Fibers", tier: "P1", inputs: [{ id: 2305, quantity: 3000 }], outputYield: 20 },
         { id: 2398, name: "Reactive Metals", tier: "P1", inputs: [{ id: 2267, quantity: 3000 }], outputYield: 20 },
@@ -150,14 +148,12 @@ export const RESOURCE_TO_PLANETS = {
     2286: ["Ice", "Oceanic"], // Planktic Colonies
     2311: ["Gas"], // Reactive Gas
     2308: ["Lava", "Plasma", "Storm"], // Suspended Plasma
-    16272: ["Ice"], // Heavy Water
-    16273: ["Ice"], // Liquid Ozone
 };
 
 export const PLANET_RESOURCES = {
     Barren: [2267, 2288, 2073, 2270],
     Gas: [2268, 2267, 2270, 2311],
-    Ice: [2268, 16272, 16273, 2073, 2286],
+    Ice: [2268, 2073, 2286],
     Lava: [2267, 2307, 2272, 2306, 2308],
     Oceanic: [2268, 2288, 2073, 2286, 2287],
     Plasma: [2267, 2272, 2270, 2306, 2308],
