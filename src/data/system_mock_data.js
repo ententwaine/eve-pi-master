@@ -52,19 +52,19 @@ export const mockSystems = [
 ];
 
 export const extractablePlanetsMap = {
-    'Aqueous Liquids': ['Barren', 'Gas', 'Ice', 'Ocean', 'Temperate', 'Storm'],
+    'Aqueous Liquids': ['Barren', 'Gas', 'Ice', 'Oceanic', 'Temperate', 'Storm'],
     'Autotrophs': ['Temperate'],
-    'Base Metals': ['Barren', 'Gas', 'Ice', 'Lava', 'Ocean', 'Plasma', 'Storm', 'Temperate'],
-    'Carbon Compounds': ['Barren', 'Ocean', 'Temperate'],
-    'Complex Organisms': ['Ocean', 'Temperate'],
+    'Base Metals': ['Barren', 'Gas', 'Ice', 'Lava', 'Oceanic', 'Plasma', 'Storm', 'Temperate'],
+    'Carbon Compounds': ['Barren', 'Oceanic', 'Temperate'],
+    'Complex Organisms': ['Oceanic', 'Temperate'],
     'Felsic Magma': ['Lava'],
     'Heavy Metals': ['Ice', 'Lava', 'Plasma'],
     'Ionic Solutions': ['Gas', 'Storm'],
-    'Microorganisms': ['Barren', 'Ice', 'Ocean', 'Temperate'],
+    'Microorganisms': ['Barren', 'Ice', 'Oceanic', 'Temperate'],
     'Noble Gas': ['Gas', 'Storm'],
     'Noble Metals': ['Barren', 'Plasma'],
     'Non-CS Crystals': ['Lava', 'Plasma'],
-    'Planktic Colonies': ['Ocean'],
+    'Planktic Colonies': ['Oceanic'],
     'Reactive Gas': ['Gas'],
     'Suspended Plasma': ['Plasma', 'Storm']
 };

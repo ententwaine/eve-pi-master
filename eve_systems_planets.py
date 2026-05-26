@@ -44,12 +44,13 @@ PLANET_TYPE_NAMES = {
     11: "Temperate",
     12: "Ice",
     13: "Gas",
-    14: "Oceanic",
-    2014: "Lava",
-    2015: "Barren",
-    2016: "Storm",
-    2017: "Plasma",
+    2014: "Oceanic",
+    2015: "Lava",
+    2016: "Barren",
+    2017: "Storm",
+    2063: "Plasma",
     30889: "Shattered",
+    73911: "Barren",
 }
 
 

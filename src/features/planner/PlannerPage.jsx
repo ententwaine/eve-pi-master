@@ -348,7 +348,10 @@ const PlannerPage = () => {
                         type="text"
                         placeholder="Type system name (e.g. Jita)"
                         value={systemSearch}
-                        onChange={(e) => setSystemSearch(e.target.value)}
+                        onChange={(e) => {
+                            setSystemSearch(e.target.value);
+                            setSelectedSystem(null);
+                        }}
                         style={{
                             width: '100%',
                             padding: 'var(--space-sm) var(--space-md)',
