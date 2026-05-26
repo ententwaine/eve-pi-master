@@ -27,6 +27,13 @@ const canProduceCommodityInSystem = (commodity, possibleP0Names) => {
     return requiredP0s.every(p0 => possibleP0Names.includes(p0));
 };
 
+const getTimeframeMultiplier = (tf) => {
+    if (tf === 'day') return 24;
+    if (tf === 'week') return 168; // 24 * 7
+    if (tf === 'month') return 672; // 24 * 7 * 4
+    return 1;
+};
+
 const PlannerPage = () => {
     const { selectedHub } = useTradeHub();
     const [systemSearch, setSystemSearch] = useState('');
@@ -40,6 +47,7 @@ const PlannerPage = () => {
     const [isLoadingSystems, setIsLoadingSystems] = useState(false);
     const [targetQuantities, setTargetQuantities] = useState({});
     const [planetConfigs, setPlanetConfigs] = useState({});
+    const [timeframe, setTimeframe] = useState('hour'); // 'hour', 'day', 'week', 'month'
 
     const [savedPlanners, setSavedPlanners] = useState([]);
     const [currentPlannerId, setCurrentPlannerId] = useState('');
@@ -90,7 +98,8 @@ const PlannerPage = () => {
                 selectedPlanetNames,
                 selectedProducts,
                 targetQuantities,
-                planetConfigs
+                planetConfigs,
+                timeframe
             }
         };
 
@@ -111,6 +120,7 @@ const PlannerPage = () => {
             setSelectedProducts([]);
             setTargetQuantities({});
             setPlanetConfigs({});
+            setTimeframe('hour');
             return;
         }
 
@@ -128,6 +138,7 @@ const PlannerPage = () => {
             setSelectedProducts(planner.data.selectedProducts || []);
             setTargetQuantities(planner.data.targetQuantities || {});
             setPlanetConfigs(planner.data.planetConfigs || {});
+            setTimeframe(planner.data.timeframe || 'hour');
         }
     };
 
@@ -372,6 +383,31 @@ const PlannerPage = () => {
                 </div>
             </header>
 
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-md)', background: 'rgba(0,0,0,0.2)', padding: 'var(--space-xs) var(--space-md)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+                <span className="text-muted" style={{ fontSize: '0.9rem' }}>Global Timeframe Selector:</span>
+                <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.3)', padding: '2px', borderRadius: '4px' }}>
+                    {['hour', 'day', 'week', 'month'].map(tf => (
+                        <button
+                            key={tf}
+                            onClick={() => setTimeframe(tf)}
+                            style={{
+                                padding: '6px 12px',
+                                fontSize: '0.8rem',
+                                border: 'none',
+                                borderRadius: '3px',
+                                background: timeframe === tf ? 'var(--color-primary)' : 'transparent',
+                                color: timeframe === tf ? '#000' : 'var(--color-text-muted)',
+                                cursor: 'pointer',
+                                fontWeight: timeframe === tf ? 'bold' : 'normal',
+                                transition: 'all 0.1s ease'
+                            }}
+                        >
+                            {tf === 'month' ? 'Month (4w)' : tf.charAt(0).toUpperCase() + tf.slice(1)}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="responsive-columns">
                 {/* Left Column - System Selection */}
                 <div className="glass-panel" style={{ flex: '1', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', height: 'fit-content' }}>
@@ -577,7 +613,7 @@ const PlannerPage = () => {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                             <span style={{ fontWeight: 'bold' }}>{p.name} <span className="text-muted" style={{ fontWeight: 'normal' }}>({p.tier})</span></span>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
-                                                <span className="text-muted" style={{ fontSize: '0.8rem' }}>Target Qty:</span>
+                                                <span className="text-muted" style={{ fontSize: '0.8rem' }}>Target Qty / hr:</span>
                                                 <input 
                                                     type="number" 
                                                     min="1" 
@@ -593,6 +629,16 @@ const PlannerPage = () => {
                                                     }}
                                                 />
                                             </div>
+                                            {(() => {
+                                                const qtyHr = targetQuantities[p.id] || 1;
+                                                return (
+                                                    <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap', marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                                        <span>Day: <span style={{ color: 'var(--color-primary)' }}>{(qtyHr * 24).toLocaleString()}</span></span>
+                                                        <span>Week: <span style={{ color: 'var(--color-primary)' }}>{(qtyHr * 168).toLocaleString()}</span></span>
+                                                        <span>Month (4w): <span style={{ color: 'var(--color-primary)' }}>{(qtyHr * 672).toLocaleString()}</span></span>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         <button 
                                             onClick={() => handleRemoveProduct(p.id)}
@@ -728,11 +774,11 @@ const PlannerPage = () => {
                             <thead>
                                 <tr style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
                                     <th style={{ padding: 'var(--space-sm)' }}>Product</th>
-                                    <th style={{ padding: 'var(--space-sm)' }}>Target Qty</th>
-                                    <th style={{ padding: 'var(--space-sm)' }}>Est. Revenue (Sell)</th>
-                                    <th style={{ padding: 'var(--space-sm)' }}>Est. Cost</th>
-                                    <th style={{ padding: 'var(--space-sm)' }}>Est. Tax</th>
-                                    <th style={{ padding: 'var(--space-sm)' }}>Est. Profit</th>
+                                    <th style={{ padding: 'var(--space-sm)' }}>Target Qty ({timeframe === 'hour' ? 'hr' : timeframe === 'day' ? 'day' : timeframe === 'week' ? 'wk' : 'mo'})</th>
+                                    <th style={{ padding: 'var(--space-sm)' }}>Est. Revenue ({timeframe === 'hour' ? 'hr' : timeframe === 'day' ? 'day' : timeframe === 'week' ? 'wk' : 'mo'})</th>
+                                    <th style={{ padding: 'var(--space-sm)' }}>Est. Cost ({timeframe === 'hour' ? 'hr' : timeframe === 'day' ? 'day' : timeframe === 'week' ? 'wk' : 'mo'})</th>
+                                    <th style={{ padding: 'var(--space-sm)' }}>Est. Tax ({timeframe === 'hour' ? 'hr' : timeframe === 'day' ? 'day' : timeframe === 'week' ? 'wk' : 'mo'})</th>
+                                    <th style={{ padding: 'var(--space-sm)' }}>Est. Profit ({timeframe === 'hour' ? 'hr' : timeframe === 'day' ? 'day' : timeframe === 'week' ? 'wk' : 'mo'})</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -750,7 +796,8 @@ const PlannerPage = () => {
                                             </tr>
                                         );
                                         
-                                        const targetYield = targetQuantities[p.id] || 1;
+                                        const timeframeMultiplier = getTimeframeMultiplier(timeframe);
+                                        const targetYield = (targetQuantities[p.id] || 1) * timeframeMultiplier;
                                         const dailyRevenue = targetYield * prices.sellPrice;
                                         const dailyCost = targetYield * prices.costPerUnit;
                                         const dailyProfit = dailyRevenue - dailyCost;
@@ -776,6 +823,7 @@ const PlannerPage = () => {
                                     });
                                     
                                     const formatTotal = (val) => new Intl.NumberFormat('en-US').format(val) + ' ISK';
+                                    const timeframeMultiplier = getTimeframeMultiplier(timeframe);
                                     
                                     return (
                                         <>
@@ -795,12 +843,13 @@ const PlannerPage = () => {
                                                     if (item) planetTax += item.quantity * (PI_BASE_VALUES[item.tier] || 0) * rate;
                                                 });
                                                 if (planetTax > 0) {
+                                                    const scaledPlanetTax = planetTax * timeframeMultiplier;
                                                     return (
                                                         <tr key={`tax-${planetName}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.9rem' }}>
                                                             <td colSpan={4} style={{ padding: 'var(--space-xs) var(--space-sm)', textAlign: 'right', color: 'var(--color-text-muted)' }}>
                                                                 ↳ {planetName} POCO Tax ({config.taxRate ?? 10}%):
                                                             </td>
-                                                            <td style={{ padding: 'var(--space-xs) var(--space-sm)', color: 'var(--color-danger)' }}>{formatTotal(planetTax)}</td>
+                                                            <td style={{ padding: 'var(--space-xs) var(--space-sm)', color: 'var(--color-danger)' }}>{formatTotal(scaledPlanetTax)}</td>
                                                             <td style={{ padding: 'var(--space-xs) var(--space-sm)' }}></td>
                                                         </tr>
                                                     );
@@ -811,9 +860,9 @@ const PlannerPage = () => {
                                                 <td colSpan={2} style={{ padding: 'var(--space-md)', textAlign: 'right' }}>GRAND TOTAL:</td>
                                                 <td style={{ padding: 'var(--space-md)', color: 'var(--color-primary)' }}>{formatTotal(totalRevenue)}</td>
                                                 <td style={{ padding: 'var(--space-md)', color: 'var(--color-danger)' }}>{formatTotal(totalCost)}</td>
-                                                <td style={{ padding: 'var(--space-md)', color: 'var(--color-danger)' }}>{formatTotal(totalPocoTax)}</td>
-                                                <td style={{ padding: 'var(--space-md)', color: (totalProfit - totalPocoTax) >= 0 ? 'var(--color-primary)' : 'var(--color-danger)', fontSize: '1.2rem' }}>
-                                                    {formatTotal(totalProfit - totalPocoTax)}
+                                                <td style={{ padding: 'var(--space-md)', color: 'var(--color-danger)' }}>{formatTotal(totalPocoTax * timeframeMultiplier)}</td>
+                                                <td style={{ padding: 'var(--space-md)', color: (totalProfit - totalPocoTax * timeframeMultiplier) >= 0 ? 'var(--color-primary)' : 'var(--color-danger)', fontSize: '1.2rem' }}>
+                                                    {formatTotal(totalProfit - totalPocoTax * timeframeMultiplier)}
                                                 </td>
                                             </tr>
                                         </>
@@ -830,7 +879,7 @@ const PlannerPage = () => {
                 <div style={{ marginTop: 'var(--space-xl)' }}>
                     <h2 style={{ marginBottom: 'var(--space-md)', fontWeight: 300 }}>Production Flowcharts</h2>
                     {selectedProducts.map(p => (
-                        <ProductFlowchart key={p.id} product={p} selectedHub={selectedHub} targetQuantity={targetQuantities[p.id] || 1} />
+                        <ProductFlowchart key={p.id} product={p} selectedHub={selectedHub} targetQuantity={targetQuantities[p.id] || 1} timeframe={timeframe} />
                     ))}
                 </div>
             )}
@@ -891,9 +940,7 @@ const PlannerPage = () => {
             )}
         </div>
     );
-};
-
-const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
+};const ProductFlowchart = ({ product, selectedHub, targetQuantity, timeframe }) => {
     const [profitInfo, setProfitInfo] = useState({ sell: 0, cost: 0, loading: true });
     const [summaryByTier, setSummaryByTier] = useState(null);
 
@@ -923,21 +970,26 @@ const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
     }, [product, selectedHub]);
 
     const formatISK = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val).replace('$', '') + ' ISK';
-    const profit = profitInfo.sell - profitInfo.cost;
+    
+    const multiplier = timeframe === 'day' ? 24 : timeframe === 'week' ? 168 : timeframe === 'month' ? 672 : 1;
+    const totalTarget = targetQuantity * multiplier;
+    const sellValue = profitInfo.sell * totalTarget;
+    const costValue = profitInfo.cost * totalTarget;
+    const profitValue = sellValue - costValue;
 
     return (
         <div className="glass-panel" style={{ padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-lg)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-md)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--space-sm)' }}>
                 <div>
                     <h3 className="text-primary">{product.name} Flowchart</h3>
-                    <p className="text-muted">Target: {targetQuantity} Units</p>
+                    <p className="text-muted">Target: {targetQuantity} Units/hr ({totalTarget.toLocaleString()} total per {timeframe === 'hour' ? 'hour' : timeframe === 'day' ? 'day' : timeframe === 'week' ? 'week' : 'month'})</p>
                 </div>
                 
                 <div style={{ textAlign: 'right', background: 'rgba(0,0,0,0.3)', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)' }}>
-                    <div style={{ fontSize: '0.9rem' }}><span className="text-muted">Sell Price:</span> {profitInfo.loading ? '...' : formatISK(profitInfo.sell)}</div>
-                    <div style={{ fontSize: '0.9rem' }}><span className="text-muted">Input Cost:</span> <span className="text-danger">{profitInfo.loading ? '...' : formatISK(profitInfo.cost)}</span></div>
-                    <div style={{ fontSize: '1.1rem', marginTop: '4px', fontWeight: 'bold', color: profit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)' }}>
-                        <span className="text-muted" style={{ fontWeight: 'normal', fontSize: '0.9rem' }}>Gross Profit (Excl. Tax):</span> {profitInfo.loading ? '...' : formatISK(profit)}
+                    <div style={{ fontSize: '0.9rem' }}><span className="text-muted">Sell Revenue:</span> {profitInfo.loading ? '...' : formatISK(sellValue)}</div>
+                    <div style={{ fontSize: '0.9rem' }}><span className="text-muted">Input Cost:</span> <span className="text-danger">{profitInfo.loading ? '...' : formatISK(costValue)}</span></div>
+                    <div style={{ fontSize: '1.1rem', marginTop: '4px', fontWeight: 'bold', color: profitValue >= 0 ? 'var(--color-primary)' : 'var(--color-danger)' }}>
+                        <span className="text-muted" style={{ fontWeight: 'normal', fontSize: '0.9rem' }}>Gross Profit (Excl. Tax):</span> {profitInfo.loading ? '...' : formatISK(profitValue)}
                     </div>
                 </div>
             </div>
@@ -954,7 +1006,7 @@ const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
             {/* Accounting Summary section added below Planet Extraction Requirements */}
             {summaryByTier && (
                 <div className="glass-panel" style={{ marginTop: 'var(--space-lg)', padding: 'var(--space-lg)', borderRadius: 'var(--radius-lg)' }}>
-                    <h3 style={{ marginTop: 0, marginBottom: 'var(--space-md)' }}>Accounting Summary</h3>
+                    <h3 style={{ marginTop: 0, marginBottom: 'var(--space-md)' }}>Accounting Summary ({timeframe === 'hour' ? 'Hourly' : timeframe === 'day' ? 'Daily' : timeframe === 'week' ? 'Weekly' : 'Monthly (4w)'})</h3>
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
@@ -979,8 +1031,8 @@ const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
                                         {Object.values(summaryByTier.items[tier] || {}).map(item => (
                                             <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                                                <span>{item.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })}x {item.name}</span>
-                                                <span style={{ whiteSpace: 'nowrap', marginLeft: '8px' }}>{formatSummaryISK(item.totalValue)}</span>
+                                                <span>{(item.quantity * multiplier).toLocaleString(undefined, { maximumFractionDigits: 0 })}x {item.name}</span>
+                                                <span style={{ whiteSpace: 'nowrap', marginLeft: '8px' }}>{formatSummaryISK(item.totalValue * multiplier)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -988,13 +1040,13 @@ const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' }}>
                                         <span style={{ color: `var(--color-tier-${tier.toLowerCase()})`, fontWeight: 'bold', fontSize: '0.9rem' }}>{tier} Total:</span>
                                         <span style={{ color: 'var(--color-text-main)', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', marginLeft: '8px' }}>
-                                            {formatSummaryISK(summaryByTier.sums[tier])}
+                                            {formatSummaryISK(summaryByTier.sums[tier] * multiplier)}
                                         </span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                                         <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Volume:</span>
                                         <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                                            {(summaryByTier.volumes?.[tier] || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³
+                                            {((summaryByTier.volumes?.[tier] || 0) * multiplier).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³
                                         </span>
                                     </div>
                                 </div>
@@ -1003,8 +1055,6 @@ const ProductFlowchart = ({ product, selectedHub, targetQuantity }) => {
                     </div>
                 </div>
             )}
-
-
         </div>
     );
 };
