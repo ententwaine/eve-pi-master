@@ -94,7 +94,9 @@ const PlannerPage = () => {
         const controller = new AbortController();
         const fetchSystems = async () => {
             setIsLoadingSystems(true);
-            const queryUrl = `/api/systems?q=${encodeURIComponent(systemSearch.trim())}`;
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const apiBase = (isLocal && window.location.port !== '5173') ? 'http://localhost:5173' : '';
+            const queryUrl = `${apiBase}/api/systems?q=${encodeURIComponent(systemSearch.trim())}`;
             console.log(`[Planner Search] Fetching from URL: "${queryUrl}"`);
             try {
                 const res = await fetch(queryUrl, {
