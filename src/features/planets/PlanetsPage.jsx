@@ -28,13 +28,27 @@ const getProducibleCommodities = (planetResources) => {
 };
 
 const PlanetsPage = () => {
-    const [expandedPlanet, setExpandedPlanet] = useState(null);
+    const [expandedPlanets, setExpandedPlanets] = useState([]);
 
-    const handlePlanetClick = (planetId) => {
-        if (expandedPlanet === planetId) {
-            setExpandedPlanet(null); // Toggle off if clicking the same one
+    const handlePlanetClick = (planetId, event) => {
+        const clickedCard = event.currentTarget;
+        const grid = clickedCard.parentElement;
+        if (!grid) return;
+
+        const cards = Array.from(grid.children);
+        const clickedOffsetTop = clickedCard.offsetTop;
+
+        // Group cards in the same visual row by offsetTop with 5px tolerance
+        const sameRowCards = cards.filter(card => Math.abs(card.offsetTop - clickedOffsetTop) < 5);
+        const sameRowPlanetIds = sameRowCards.map(card => parseInt(card.getAttribute('data-planet-id'), 10));
+
+        const isCurrentlyExpanded = expandedPlanets.includes(planetId);
+        if (isCurrentlyExpanded) {
+            // Collapse all planets in this row
+            setExpandedPlanets(prev => prev.filter(id => !sameRowPlanetIds.includes(id)));
         } else {
-            setExpandedPlanet(planetId);
+            // Expand all planets in this row
+            setExpandedPlanets(prev => Array.from(new Set([...prev, ...sameRowPlanetIds])));
         }
     };
 
@@ -52,15 +66,16 @@ const PlanetsPage = () => {
 
             <div className="planets-grid">
                 {planetTypes.map((planet) => {
-                    const isExpanded = expandedPlanet === planet.id;
+                    const isExpanded = expandedPlanets.includes(planet.id);
                     const planetResources = PLANET_RESOURCES[planet.name] || [];
                     
                     return (
                         <div 
                             key={planet.id} 
+                            data-planet-id={planet.id}
                             className={`planet-card ${isExpanded ? 'expanded' : ''}`}
                             style={{ '--planet-color': planet.color }}
-                            onClick={() => handlePlanetClick(planet.id)}
+                            onClick={(e) => handlePlanetClick(planet.id, e)}
                         >
                             <div className="planet-orb-container">
                                 <img 
