@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTradeHub } from '../../context/TradeHubContext';
 import { extractablePlanetsMap } from '../../data/system_mock_data';
-import systemsData from '../../data/systems_with_planets.json';
 import { commodities, RESOURCE_TO_PLANETS } from '../../data/pi_data';
 import SchematicTree from '../pi/components/SchematicTree';
 import PlanetBreakdown from '../pi/components/PlanetBreakdown';
@@ -16,6 +15,8 @@ const PlannerPage = () => {
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [productSearch, setProductSearch] = useState('');
     const [productPrices, setProductPrices] = useState({});
+    const [filteredSystems, setFilteredSystems] = useState([]);
+    const [isLoadingSystems, setIsLoadingSystems] = useState(false);
     const [targetQuantities, setTargetQuantities] = useState({});
     const [planetConfigs, setPlanetConfigs] = useState({});
 
@@ -83,16 +84,43 @@ const PlannerPage = () => {
         'P4': 1200000
     };
 
-    const filteredSystems = systemsData.filter(s => s.name.toLowerCase().includes(systemSearch.toLowerCase())).slice(0, 20);
-    
-    // Auto-select system if exactly matched
     useEffect(() => {
-        const exactMatch = systemsData.find(s => s.name.toLowerCase() === systemSearch.toLowerCase());
-        if (exactMatch && (!selectedSystem || selectedSystem.name !== exactMatch.name)) {
-            setSelectedSystem(exactMatch);
-        } else if (systemSearch === '') {
+        if (!systemSearch.trim()) {
+            setFilteredSystems([]);
             setSelectedSystem(null);
+            return;
         }
+
+        const controller = new AbortController();
+        const fetchSystems = async () => {
+            setIsLoadingSystems(true);
+            try {
+                const res = await fetch(`/api/systems?q=${encodeURIComponent(systemSearch.trim())}`, {
+                    signal: controller.signal
+                });
+                const data = await res.json();
+                setFilteredSystems(data);
+                
+                // Auto-select system if exactly matched
+                const exactMatch = data.find(s => s.name.toLowerCase() === systemSearch.trim().toLowerCase());
+                if (exactMatch) {
+                    setSelectedSystem(exactMatch);
+                }
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    console.error("Failed to fetch systems:", e);
+                }
+            } finally {
+                setIsLoadingSystems(false);
+            }
+        };
+
+        const timeoutId = setTimeout(fetchSystems, 200);
+
+        return () => {
+            clearTimeout(timeoutId);
+            controller.abort();
+        };
     }, [systemSearch]);
 
     // Fetch prices for selected products
@@ -328,17 +356,23 @@ const PlannerPage = () => {
                         }}
                     />
                     
-                    {!selectedSystem && systemSearch.length > 0 && (
+                    {!selectedSystem && systemSearch.trim().length > 0 && (
                         <div style={{ background: 'var(--color-bg-panel)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', maxHeight: '150px', overflowY: 'auto' }}>
-                            {filteredSystems.map(s => (
-                                <div 
-                                    key={s.name} 
-                                    onClick={() => { setSystemSearch(s.name); setSelectedSystem(s); }}
-                                    style={{ padding: 'var(--space-sm)', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}
-                                >
-                                    {s.name} ({s.security.toFixed(1)})
-                                </div>
-                            ))}
+                            {isLoadingSystems ? (
+                                <div style={{ padding: 'var(--space-sm)', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Searching solar systems...</div>
+                            ) : filteredSystems.length === 0 ? (
+                                <div style={{ padding: 'var(--space-sm)', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>No solar systems found</div>
+                            ) : (
+                                filteredSystems.map(s => (
+                                    <div 
+                                        key={s.name} 
+                                        onClick={() => { setSystemSearch(s.name); setSelectedSystem(s); }}
+                                        style={{ padding: 'var(--space-sm)', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}
+                                    >
+                                        {s.name} ({s.security.toFixed(1)})
+                                    </div>
+                                ))
+                            )}
                         </div>
                     )}
 
