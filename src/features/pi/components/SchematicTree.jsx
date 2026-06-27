@@ -176,6 +176,11 @@ const TreeNode = ({ node, level = 0, prices }) => {
                                 {prices[node.id] === undefined ? '...' : formatISK(totalValue)}{formatTime(node.tier, node.quantity)}
                             </span>
                         </div>
+                        {node.tier === 'P1' && (
+                            <span style={{ fontSize: '0.65rem', color: 'var(--color-warning)', marginTop: '2px', display: 'block', fontStyle: 'italic' }}>
+                                It takes 3000 P0 to make 20 P1
+                            </span>
+                        )}
                     </div>
                 </div>
             </Link>
