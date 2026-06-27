@@ -303,7 +303,7 @@ const PlannerPage = () => {
                         const buyPrice = await getHighestBuyOrder(selectedHub.regionId, product.id, selectedHub.systemId);
                         
                         let totalInputCost = 0;
-                        const inputMultiplier = product.tier === 'P1' ? 3000 : 2;
+                        const inputMultiplier = product.tier === 'P1' ? 150 : 2;
                         for (const input of product.inputs) {
                             const inputSell = await getLowestSellOrder(selectedHub.regionId, input.id, selectedHub.systemId);
                             totalInputCost += (inputSell * inputMultiplier);
@@ -403,7 +403,7 @@ const PlannerPage = () => {
             
             let qtyNeeded = rootQty;
             if (tier === 'P0') {
-                qtyNeeded = 3000 * Math.pow(2, rootLevel - 1) * rootQty;
+                qtyNeeded = 150 * Math.pow(2, rootLevel - 1) * rootQty;
             } else {
                 qtyNeeded = Math.pow(2, diff) * rootQty;
             }

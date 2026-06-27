@@ -50,7 +50,7 @@ const buildTree = (itemId, quantity = 1, rootTier = null, isRoot = true) => {
         const currentLevel = Number(item.tier.replace('P', ''));
         const diff = rootLevel - currentLevel;
         if (item.tier === 'P0') {
-            displayQty = 3000 * Math.pow(2, rootLevel - 1) * quantity;
+            displayQty = 150 * Math.pow(2, rootLevel - 1) * quantity;
         } else {
             displayQty = Math.pow(2, diff) * quantity;
         }

@@ -17,7 +17,7 @@ const PlanetBreakdown = ({ targetId, hourlyYield = 1 }) => {
         const item = commodities.find(c => c.id === itemId);
         if (!item) return;
         if (item.tier === 'P0') {
-            const p0Qty = 3000 * Math.pow(2, rootLevel - 1) * hourlyYield;
+            const p0Qty = 150 * Math.pow(2, rootLevel - 1) * hourlyYield;
             rawRequirements[itemId] = (rawRequirements[itemId] || 0) + p0Qty;
             return;
         }
