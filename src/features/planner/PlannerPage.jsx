@@ -46,18 +46,15 @@ const calculateMaxStructures = (ccLevel, storageCount, launchpadCount, factories
     
     // Max Storage (excluding current storage)
     const pgForS = Math.max(0, cc.pg - (fixedPg + (launchpadCount * 700) + (factoriesCount * factoryPg)));
-    const cpuForS = Math.max(0, cc.cpu - (fixedCpu + (launchpadCount * 700) + (factoriesCount * factoryCpu)));
-    const maxStorage = Math.min(Math.floor(pgForS / 700), Math.floor(cpuForS / 500));
+    const maxStorage = Math.floor(pgForS / 700);
     
     // Max Launchpads (excluding current launchpads)
     const pgForL = Math.max(0, cc.pg - (fixedPg + (storageCount * 700) + (factoriesCount * factoryPg)));
-    const cpuForL = Math.max(0, cc.cpu - (fixedCpu + (storageCount * 500) + (factoriesCount * factoryCpu)));
-    const maxLaunchpads = Math.min(Math.floor(pgForL / 700), Math.floor(cpuForL / 700));
+    const maxLaunchpads = Math.floor(pgForL / 700);
     
     // Max Factories (excluding current factories)
     const pgForF = Math.max(0, cc.pg - (fixedPg + (storageCount * 700) + (launchpadCount * 700)));
-    const cpuForF = Math.max(0, cc.cpu - (fixedCpu + (storageCount * 500) + (launchpadCount * 700)));
-    const maxFactories = Math.min(Math.floor(pgForF / factoryPg), Math.floor(cpuForF / factoryCpu));
+    const maxFactories = Math.floor(pgForF / factoryPg);
     
     return {
         maxStorage,
