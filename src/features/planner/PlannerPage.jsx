@@ -19,23 +19,16 @@ const CC_UPGRADES_RESOURCES = [
     { level: 5, name: "Elite", pg: 21000, cpu: 3800 }
 ];
 
-const calculateMaxFactories = (ccLevel, storageCount, launchpadCount, isExtracting, ecuCount, extractorHeads, commodityTier) => {
+const calculateMaxStructures = (ccLevel, storageCount, launchpadCount, factoriesCount, isExtracting, ecuCount, extractorHeads, commodityTier) => {
     const cc = CC_UPGRADES_RESOURCES[ccLevel] || CC_UPGRADES_RESOURCES[0];
     
-    let usedPg = (storageCount * 700) + (launchpadCount * 700);
-    let usedCpu = (storageCount * 500) + (launchpadCount * 700);
+    let fixedPg = 150; // Link overhead
+    let fixedCpu = 150;
     
     if (isExtracting) {
-        usedPg += (ecuCount * 2600) + (extractorHeads * 550);
-        usedCpu += (ecuCount * 400) + (extractorHeads * 110);
+        fixedPg += (ecuCount * 2600) + (extractorHeads * 550);
+        fixedCpu += (ecuCount * 400) + (extractorHeads * 110);
     }
-    
-    // Links overhead
-    usedPg += 150;
-    usedCpu += 150;
-    
-    const remainingPg = Math.max(0, cc.pg - usedPg);
-    const remainingCpu = Math.max(0, cc.cpu - usedCpu);
     
     let factoryPg = 700; // Advanced
     let factoryCpu = 500;
@@ -47,17 +40,33 @@ const calculateMaxFactories = (ccLevel, storageCount, launchpadCount, isExtracti
         factoryCpu = 1100;
     }
     
-    const maxByPg = Math.floor(remainingPg / factoryPg);
-    const maxByCpu = Math.floor(remainingCpu / factoryCpu);
+    // Total current usage
+    const usedPg = fixedPg + (storageCount * 700) + (launchpadCount * 700) + (factoriesCount * factoryPg);
+    const usedCpu = fixedCpu + (storageCount * 500) + (launchpadCount * 700) + (factoriesCount * factoryCpu);
+    
+    // Max Storage (excluding current storage)
+    const pgForS = Math.max(0, cc.pg - (fixedPg + (launchpadCount * 700) + (factoriesCount * factoryPg)));
+    const cpuForS = Math.max(0, cc.cpu - (fixedCpu + (launchpadCount * 700) + (factoriesCount * factoryCpu)));
+    const maxStorage = Math.min(Math.floor(pgForS / 700), Math.floor(cpuForS / 500));
+    
+    // Max Launchpads (excluding current launchpads)
+    const pgForL = Math.max(0, cc.pg - (fixedPg + (storageCount * 700) + (factoriesCount * factoryPg)));
+    const cpuForL = Math.max(0, cc.cpu - (fixedCpu + (storageCount * 500) + (factoriesCount * factoryCpu)));
+    const maxLaunchpads = Math.min(Math.floor(pgForL / 700), Math.floor(cpuForL / 700));
+    
+    // Max Factories (excluding current factories)
+    const pgForF = Math.max(0, cc.pg - (fixedPg + (storageCount * 700) + (launchpadCount * 700)));
+    const cpuForF = Math.max(0, cc.cpu - (fixedCpu + (storageCount * 500) + (launchpadCount * 700)));
+    const maxFactories = Math.min(Math.floor(pgForF / factoryPg), Math.floor(cpuForF / factoryCpu));
     
     return {
-        maxFactories: Math.max(0, Math.min(maxByPg, maxByCpu)),
-        remainingPg,
-        remainingCpu,
-        totalPg: cc.pg,
-        totalCpu: cc.cpu,
+        maxStorage,
+        maxLaunchpads,
+        maxFactories,
         usedPg,
-        usedCpu
+        usedCpu,
+        totalPg: cc.pg,
+        totalCpu: cc.cpu
     };
 };
 
@@ -932,11 +941,12 @@ const PlannerPage = () => {
                                 );
                             }
 
-                            // Calculate max factories
-                            const calc = calculateMaxFactories(
+                            // Calculate max structures
+                            const calc = calculateMaxStructures(
                                 effectiveCcuSkill,
                                 config.storageCount,
                                 config.launchpadCount,
+                                config.factoriesCount,
                                 config.isExtracting,
                                 config.ecuCount,
                                 config.extractorHeads,
@@ -944,11 +954,22 @@ const PlannerPage = () => {
                             );
 
                             const maxFactories = calc.maxFactories;
+                            const maxStorage = calc.maxStorage;
+                            const maxLaunchpads = calc.maxLaunchpads;
                             
-                            // Automatically adjust factories count if it exceeds max
+                            // Automatically adjust counts if they exceed their max
+                            const storageCount = Math.min(config.storageCount, maxStorage);
+                            if (storageCount !== config.storageCount) {
+                                setTimeout(() => updateConfigForPlanet(activePlanetTab, 'storageCount', storageCount), 0);
+                            }
+
+                            const launchpadCount = Math.min(config.launchpadCount, maxLaunchpads);
+                            if (launchpadCount !== config.launchpadCount) {
+                                setTimeout(() => updateConfigForPlanet(activePlanetTab, 'launchpadCount', launchpadCount), 0);
+                            }
+
                             const factoriesCount = Math.min(config.factoriesCount, maxFactories);
                             if (factoriesCount !== config.factoriesCount) {
-                                // Defer update to avoid state update during render cycle
                                 setTimeout(() => updateConfigForPlanet(activePlanetTab, 'factoriesCount', factoriesCount), 0);
                             }
 
@@ -1023,9 +1044,9 @@ const PlannerPage = () => {
                                             <input 
                                                 type="number"
                                                 min="0"
-                                                max="10"
-                                                value={config.storageCount}
-                                                onChange={(e) => updateConfigForPlanet(activePlanetTab, 'storageCount', Math.max(0, Number(e.target.value)))}
+                                                max={maxStorage}
+                                                value={storageCount}
+                                                onChange={(e) => updateConfigForPlanet(activePlanetTab, 'storageCount', Math.min(maxStorage, Math.max(0, Number(e.target.value))))}
                                                 style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }}
                                             />
                                         </div>
@@ -1034,9 +1055,9 @@ const PlannerPage = () => {
                                             <input 
                                                 type="number"
                                                 min="0"
-                                                max="10"
-                                                value={config.launchpadCount}
-                                                onChange={(e) => updateConfigForPlanet(activePlanetTab, 'launchpadCount', Math.max(0, Number(e.target.value)))}
+                                                max={maxLaunchpads}
+                                                value={launchpadCount}
+                                                onChange={(e) => updateConfigForPlanet(activePlanetTab, 'launchpadCount', Math.min(maxLaunchpads, Math.max(0, Number(e.target.value))))}
                                                 style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }}
                                             />
                                         </div>
