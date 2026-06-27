@@ -135,7 +135,7 @@ const PlannerPage = () => {
                 try {
                     const data = await fetchCharacterSkills(user.id, token);
                     if (data && data.skills) {
-                        const icSkill = data.skills.find(s => s.skill_id === 12361);
+                        const icSkill = data.skills.find(s => s.skill_id === 2495);
                         const ccuSkill = data.skills.find(s => s.skill_id === 2505);
                         setPiSkills({
                             interplanetaryConsolidation: icSkill ? (icSkill.active_skill_level ?? icSkill.trained_skill_level ?? 0) : 0,
@@ -404,7 +404,7 @@ const PlannerPage = () => {
         
         selectedProducts.forEach(p => {
             const planetYield = getPlanetProducedHourlyYield(p.id);
-            const targetQty = planetYield > 0 ? planetYield : (targetQuantities[p.id] || 1);
+            const targetQty = planetYield;
             const yieldAmount = p.outputYield || 1;
             const cycles = Math.ceil(targetQty / yieldAmount);
             const producedQty = cycles * yieldAmount;
@@ -813,32 +813,23 @@ const PlannerPage = () => {
                                                     Remove
                                                 </button>
                                             </div>
-                                            
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                                                <span className="text-muted" style={{ fontSize: '0.8rem' }}>Target Qty / hr:</span>
-                                                <input 
-                                                    type="number" 
-                                                    min="1" 
-                                                    value={qty} 
-                                                    disabled={planetYield > 0}
-                                                    onChange={(e) => handleQuantityChange(p.id, Number(e.target.value))}
-                                                    style={{
-                                                        width: '70px',
-                                                        padding: '2px 8px',
-                                                        background: planetYield > 0 ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)',
-                                                        border: '1px solid var(--color-border)',
-                                                        color: planetYield > 0 ? 'var(--color-primary)' : 'var(--color-text-main)',
-                                                        borderRadius: '4px',
-                                                        fontWeight: planetYield > 0 ? 'bold' : 'normal'
-                                                    }}
-                                                />
-                                                {planetYield > 0 && <span className="text-success" style={{ fontSize: '0.75rem' }}>Auto (Planet Setup)</span>}
+                                                <span className="text-muted" style={{ fontSize: '0.8rem' }}>Production Rate:</span>
+                                                {planetYield > 0 ? (
+                                                    <span className="text-success" style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                                        {planetYield.toLocaleString()} units/hr <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}>(via Planet Setup)</span>
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: 'var(--color-danger)', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                                        0 units/hr <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}>(no factories configured)</span>
+                                                    </span>
+                                                )}
                                             </div>
 
                                             <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                                <span>Day: <span style={{ color: 'var(--color-primary)' }}>{(qty * 24).toLocaleString()}</span></span>
-                                                <span>Week: <span style={{ color: 'var(--color-primary)' }}>{(qty * 168).toLocaleString()}</span></span>
-                                                <span>Month: <span style={{ color: 'var(--color-primary)' }}>{(qty * 672).toLocaleString()}</span></span>
+                                                <span>Day: <span style={{ color: 'var(--color-primary)' }}>{(planetYield * 24).toLocaleString()}</span></span>
+                                                <span>Week: <span style={{ color: 'var(--color-primary)' }}>{(planetYield * 168).toLocaleString()}</span></span>
+                                                <span>Month: <span style={{ color: 'var(--color-primary)' }}>{(planetYield * 672).toLocaleString()}</span></span>
                                             </div>
 
                                             <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: '6px', fontSize: '0.8rem', borderTop: '1px dashed rgba(255,255,255,0.05)', paddingTop: '4px' }}>
@@ -1317,7 +1308,7 @@ const PlannerPage = () => {
                                         
                                         const timeframeMultiplier = getTimeframeMultiplier(timeframe);
                                         const planetYield = getPlanetProducedHourlyYield(p.id);
-                                        const targetYield = (planetYield > 0 ? planetYield : (targetQuantities[p.id] || 1)) * timeframeMultiplier;
+                                        const targetYield = planetYield * timeframeMultiplier;
                                         const dailyRevenue = targetYield * prices.sellPrice;
                                         const dailyCost = targetYield * prices.costPerUnit;
                                         const dailyProfit = dailyRevenue - dailyCost;
