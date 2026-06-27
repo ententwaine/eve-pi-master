@@ -45,13 +45,12 @@ const CommodityDetailPage = () => {
                 
                 // Fetch sell prices for all inputs to calculate input cost (cost to build)
                 let totalInputCost = 0;
-                const inputMultiplier = commodity.tier === 'P1' ? 150 : 2;
                 for (const input of commodity.inputs) {
                     const inputSell = await getLowestSellOrder(selectedHub.regionId, input.id, selectedHub.systemId);
-                    totalInputCost += (inputSell * inputMultiplier);
+                    totalInputCost += (inputSell * input.quantity);
                 }
 
-                const costPerUnit = totalInputCost;
+                const costPerUnit = commodity.outputYield > 0 ? (totalInputCost / commodity.outputYield) : 0;
                 const profit = sellPrice - costPerUnit;
 
                 if (isMounted) {

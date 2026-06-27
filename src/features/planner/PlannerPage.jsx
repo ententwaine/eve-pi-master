@@ -303,12 +303,11 @@ const PlannerPage = () => {
                         const buyPrice = await getHighestBuyOrder(selectedHub.regionId, product.id, selectedHub.systemId);
                         
                         let totalInputCost = 0;
-                        const inputMultiplier = product.tier === 'P1' ? 150 : 2;
                         for (const input of product.inputs) {
                             const inputSell = await getLowestSellOrder(selectedHub.regionId, input.id, selectedHub.systemId);
-                            totalInputCost += (inputSell * inputMultiplier);
+                            totalInputCost += (inputSell * input.quantity);
                         }
-                        const costPerUnit = totalInputCost;
+                        const costPerUnit = product.outputYield > 0 ? (totalInputCost / product.outputYield) : 0;
                         
                         if (isMounted) {
                             setProductPrices(prev => ({
@@ -392,22 +391,11 @@ const PlannerPage = () => {
         const bom = { P4: {}, P3: {}, P2: {}, P1: {}, P0: {} };
         const flatItems = [];
         
-        const traverseGlobal = (itemId, rootQty, rootTier) => {
+        const traverseGlobal = (itemId, qtyNeeded) => {
             const item = commodities.find(c => c.id === Number(itemId));
             if (!item) return;
             
             const tier = item.tier;
-            const rootLevel = Number(rootTier.replace('P', ''));
-            const currentLevel = Number(tier.replace('P', ''));
-            const diff = rootLevel - currentLevel;
-            
-            let qtyNeeded = rootQty;
-            if (tier === 'P0') {
-                qtyNeeded = 150 * Math.pow(2, rootLevel - 1) * rootQty;
-            } else {
-                qtyNeeded = Math.pow(2, diff) * rootQty;
-            }
-            
             if (bom[tier]) {
                 bom[tier][itemId] = (bom[tier][itemId] || 0) + qtyNeeded;
             }
@@ -415,7 +403,8 @@ const PlannerPage = () => {
             if (tier === 'P0') return;
             
             for (const input of item.inputs) {
-                traverseGlobal(input.id, rootQty, rootTier);
+                const childQty = qtyNeeded * (input.quantity / (item.outputYield || 1));
+                traverseGlobal(input.id, childQty);
             }
         };
         
@@ -428,7 +417,8 @@ const PlannerPage = () => {
                 bom[p.tier][p.id] = (bom[p.tier][p.id] || 0) + targetQty;
             }
             for (const input of p.inputs) {
-                traverseGlobal(input.id, targetQty, p.tier);
+                const childQty = targetQty * (input.quantity / (p.outputYield || 1));
+                traverseGlobal(input.id, childQty);
             }
         });
 

@@ -38,32 +38,20 @@ const formatTime = (tier, quantity) => {
 };
 
 // --- Recursive Tree Builder ---
-const buildTree = (itemId, quantity = 1, rootTier = null, isRoot = true) => {
+const buildTree = (itemId, quantity = 1) => {
     const item = commodities.find(c => c.id === Number(itemId));
     if (!item) return null;
 
-    const currentRootTier = isRoot ? item.tier : rootTier;
-
-    let displayQty = quantity;
-    if (!isRoot && currentRootTier) {
-        const rootLevel = Number(currentRootTier.replace('P', ''));
-        const currentLevel = Number(item.tier.replace('P', ''));
-        const diff = rootLevel - currentLevel;
-        if (item.tier === 'P0') {
-            displayQty = 150 * Math.pow(2, rootLevel - 1) * quantity;
-        } else {
-            displayQty = Math.pow(2, diff) * quantity;
-        }
-    }
-
-    // Calculate inputs
+    // Calculate inputs using exact recipe scaling:
+    // childQuantity = parentQuantity * (input.quantity / parentOutputYield)
     const children = (item.inputs || []).map(input => {
-        return buildTree(input.id, quantity, currentRootTier, false);
+        const reqQty = quantity * (input.quantity / (item.outputYield || 1));
+        return buildTree(input.id, reqQty);
     }).filter(Boolean); // remove nulls
 
     return {
         ...item,
-        quantity: displayQty,
+        quantity,
         children
     };
 };
@@ -176,11 +164,6 @@ const TreeNode = ({ node, level = 0, prices }) => {
                                 {prices[node.id] === undefined ? '...' : formatISK(totalValue)}{formatTime(node.tier, node.quantity)}
                             </span>
                         </div>
-                        {node.tier === 'P1' && (
-                            <span style={{ fontSize: '0.65rem', color: 'var(--color-warning)', marginTop: '2px', display: 'block', fontStyle: 'italic' }}>
-                                It takes 3000 P0 to make 20 P1
-                            </span>
-                        )}
                     </div>
                 </div>
             </Link>

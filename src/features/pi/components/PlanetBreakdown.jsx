@@ -12,20 +12,19 @@ const PlanetBreakdown = ({ targetId, hourlyYield = 1 }) => {
     const targetProducedQty = targetCycles * yieldAmount;
 
     let rawRequirements = {};
-    const rootLevel = Number(targetItem.tier.replace('P', ''));
-    const traverse = (itemId) => {
+    const traverse = (itemId, qtyNeeded) => {
         const item = commodities.find(c => c.id === itemId);
         if (!item) return;
         if (item.tier === 'P0') {
-            const p0Qty = 150 * Math.pow(2, rootLevel - 1) * hourlyYield;
-            rawRequirements[itemId] = (rawRequirements[itemId] || 0) + p0Qty;
+            rawRequirements[itemId] = (rawRequirements[itemId] || 0) + qtyNeeded;
             return;
         }
         for (const input of item.inputs) {
-            traverse(input.id);
+            const childQty = qtyNeeded * (input.quantity / (item.outputYield || 1));
+            traverse(input.id, childQty);
         }
     };
-    traverse(targetItem.id);
+    traverse(targetItem.id, hourlyYield);
 
     return (
         <div style={{ marginTop: 'var(--space-md)' }}>
