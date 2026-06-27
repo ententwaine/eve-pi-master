@@ -303,11 +303,12 @@ const PlannerPage = () => {
                         const buyPrice = await getHighestBuyOrder(selectedHub.regionId, product.id, selectedHub.systemId);
                         
                         let totalInputCost = 0;
+                        const inputMultiplier = product.tier === 'P1' ? 3000 : 2;
                         for (const input of product.inputs) {
                             const inputSell = await getLowestSellOrder(selectedHub.regionId, input.id, selectedHub.systemId);
-                            totalInputCost += (inputSell * input.quantity);
+                            totalInputCost += (inputSell * inputMultiplier);
                         }
-                        const costPerUnit = product.outputYield > 0 ? (totalInputCost / product.outputYield) : 0;
+                        const costPerUnit = totalInputCost;
                         
                         if (isMounted) {
                             setProductPrices(prev => ({
