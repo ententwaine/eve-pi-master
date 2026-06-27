@@ -1,13 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTradeHub } from '../../context/TradeHubContext';
+import { useAuth } from '../../context/AuthContext';
 import { extractablePlanetsMap } from '../../data/system_mock_data';
 import { commodities, RESOURCE_TO_PLANETS } from '../../data/pi_data';
 import SchematicTree from '../pi/components/SchematicTree';
 import PlanetBreakdown from '../pi/components/PlanetBreakdown';
 import PlanetLabel from '../../components/PlanetLabel';
-import { getLowestSellOrder, getHighestBuyOrder } from '../../services/esiApi';
+import { getLowestSellOrder, getHighestBuyOrder, fetchCharacterSkills } from '../../services/esiApi';
 import { getSavedPiPlanners, savePiPlanner } from '../../utils/storage';
 import { loadSystemsDatabase, searchSystems } from '../../utils/systemLookup';
+
+const CC_UPGRADES_RESOURCES = [
+    { level: 0, name: "Basic", pg: 6000, cpu: 1675 },
+    { level: 1, name: "Medium", pg: 9000, cpu: 2100 },
+    { level: 2, name: "Advanced", pg: 12000, cpu: 2525 },
+    { level: 3, name: "Advanced II", pg: 15000, cpu: 2950 },
+    { level: 4, name: "Advanced III", pg: 18000, cpu: 3375 },
+    { level: 5, name: "Elite", pg: 21000, cpu: 3800 }
+];
+
+const calculateMaxFactories = (ccLevel, storageCount, launchpadCount, isExtracting, ecuCount, extractorHeads, commodityTier) => {
+    const cc = CC_UPGRADES_RESOURCES[ccLevel] || CC_UPGRADES_RESOURCES[0];
+    
+    let usedPg = (storageCount * 700) + (launchpadCount * 700);
+    let usedCpu = (storageCount * 500) + (launchpadCount * 700);
+    
+    if (isExtracting) {
+        usedPg += (ecuCount * 2600) + (extractorHeads * 550);
+        usedCpu += (ecuCount * 400) + (extractorHeads * 110);
+    }
+    
+    // Links overhead
+    usedPg += 150;
+    usedCpu += 150;
+    
+    const remainingPg = Math.max(0, cc.pg - usedPg);
+    const remainingCpu = Math.max(0, cc.cpu - usedCpu);
+    
+    let factoryPg = 700; // Advanced
+    let factoryCpu = 500;
+    if (commodityTier === 'P1') {
+        factoryPg = 800;
+        factoryCpu = 200;
+    } else if (commodityTier === 'P4') {
+        factoryPg = 400;
+        factoryCpu = 1100;
+    }
+    
+    const maxByPg = Math.floor(remainingPg / factoryPg);
+    const maxByCpu = Math.floor(remainingCpu / factoryCpu);
+    
+    return {
+        maxFactories: Math.max(0, Math.min(maxByPg, maxByCpu)),
+        remainingPg,
+        remainingCpu,
+        totalPg: cc.pg,
+        totalCpu: cc.cpu,
+        usedPg,
+        usedCpu
+    };
+};
 
 const getP0RequiredForCommodity = (commodityId) => {
     const item = commodities.find(c => c.id === commodityId);
@@ -36,6 +88,7 @@ const getTimeframeMultiplier = (tf) => {
 
 const PlannerPage = () => {
     const { selectedHub } = useTradeHub();
+    const { user, token } = useAuth();
     const [systemSearch, setSystemSearch] = useState('');
     const [selectedSystem, setSelectedSystem] = useState(null);
     const [selectedPlanetNames, setSelectedPlanetNames] = useState([]);
@@ -49,12 +102,55 @@ const PlannerPage = () => {
     const [planetConfigs, setPlanetConfigs] = useState({});
     const [timeframe, setTimeframe] = useState('hour'); // 'hour', 'day', 'week', 'month'
 
+    // ESI and Manual Skills state
+    const [piSkills, setPiSkills] = useState({
+        interplanetaryConsolidation: 5,
+        commandCenterUpgrades: 5,
+    });
+    const [isSkillsLoading, setIsSkillsLoading] = useState(false);
+    const [manualIcSkill, setManualIcSkill] = useState(5);
+    const [manualCcuSkill, setManualCcuSkill] = useState(5);
+
+    // Active Tab in the Planets UI
+    const [activePlanetTab, setActivePlanetTab] = useState(1);
+
+    // Config for each colony (Planet 1 to Planet 6)
+    const [planetProductionConfigs, setPlanetProductionConfigs] = useState({});
+
+    const effectiveIcSkill = user ? piSkills.interplanetaryConsolidation : manualIcSkill;
+    const effectiveCcuSkill = user ? piSkills.commandCenterUpgrades : manualCcuSkill;
+
     const [savedPlanners, setSavedPlanners] = useState([]);
     const [currentPlannerId, setCurrentPlannerId] = useState('');
     const [plannerName, setPlannerName] = useState('My PI Planner');
 
     const [systemsDb, setSystemsDb] = useState(null);
     const [dbError, setDbError] = useState(null);
+
+    // Fetch skills from ESI when logged in
+    useEffect(() => {
+        const getSkills = async () => {
+            if (user && token) {
+                setIsSkillsLoading(true);
+                try {
+                    const data = await fetchCharacterSkills(user.id, token);
+                    if (data && data.skills) {
+                        const icSkill = data.skills.find(s => s.skill_id === 12361);
+                        const ccuSkill = data.skills.find(s => s.skill_id === 2505);
+                        setPiSkills({
+                            interplanetaryConsolidation: icSkill ? (icSkill.active_skill_level ?? icSkill.trained_skill_level ?? 0) : 0,
+                            commandCenterUpgrades: ccuSkill ? (ccuSkill.active_skill_level ?? ccuSkill.trained_skill_level ?? 0) : 0,
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch character skills:", e);
+                } finally {
+                    setIsSkillsLoading(false);
+                }
+            }
+        };
+        getSkills();
+    }, [user, token]);
 
     useEffect(() => {
         if (selectedSystem && selectedSystem.name !== lastSystemName) {
@@ -99,7 +195,11 @@ const PlannerPage = () => {
                 selectedProducts,
                 targetQuantities,
                 planetConfigs,
-                timeframe
+                timeframe,
+                planetProductionConfigs,
+                manualIcSkill,
+                manualCcuSkill,
+                activePlanetTab
             }
         };
 
@@ -121,6 +221,10 @@ const PlannerPage = () => {
             setTargetQuantities({});
             setPlanetConfigs({});
             setTimeframe('hour');
+            setPlanetProductionConfigs({});
+            setManualIcSkill(5);
+            setManualCcuSkill(5);
+            setActivePlanetTab(1);
             return;
         }
 
@@ -139,6 +243,10 @@ const PlannerPage = () => {
             setTargetQuantities(planner.data.targetQuantities || {});
             setPlanetConfigs(planner.data.planetConfigs || {});
             setTimeframe(planner.data.timeframe || 'hour');
+            setPlanetProductionConfigs(planner.data.planetProductionConfigs || {});
+            setManualIcSkill(planner.data.manualIcSkill ?? 5);
+            setManualCcuSkill(planner.data.manualCcuSkill ?? 5);
+            setActivePlanetTab(planner.data.activePlanetTab ?? 1);
         }
     };
 
@@ -258,6 +366,21 @@ const PlannerPage = () => {
     };
 
 
+    const getPlanetProducedHourlyYield = useCallback((productId) => {
+        let totalYield = 0;
+        for (let i = 1; i <= effectiveIcSkill + 1; i++) {
+            const config = planetProductionConfigs[i];
+            if (config && Number(config.commodityId) === Number(productId)) {
+                const commodity = commodities.find(c => c.id === Number(productId));
+                if (commodity) {
+                    const rate = commodity.tier === 'P1' ? (commodity.outputYield * 2) : commodity.outputYield;
+                    totalYield += (config.factoriesCount || 0) * rate;
+                }
+            }
+        }
+        return totalYield;
+    }, [planetProductionConfigs, effectiveIcSkill]);
+
     const { globalBom, flatBomItems } = React.useMemo(() => {
         const bom = { P4: {}, P3: {}, P2: {}, P1: {}, P0: {} };
         const flatItems = [];
@@ -280,7 +403,8 @@ const PlannerPage = () => {
         };
         
         selectedProducts.forEach(p => {
-            const targetQty = targetQuantities[p.id] || 1;
+            const planetYield = getPlanetProducedHourlyYield(p.id);
+            const targetQty = planetYield > 0 ? planetYield : (targetQuantities[p.id] || 1);
             const yieldAmount = p.outputYield || 1;
             const cycles = Math.ceil(targetQty / yieldAmount);
             const producedQty = cycles * yieldAmount;
@@ -301,7 +425,7 @@ const PlannerPage = () => {
         });
         
         return { globalBom: bom, flatBomItems: flatItems };
-    }, [selectedProducts, targetQuantities]);
+    }, [selectedProducts, targetQuantities, getPlanetProducedHourlyYield]);
 
     const totalPocoTax = React.useMemo(() => {
         if (!selectedSystem || !flatBomItems.length) return 0;
@@ -571,13 +695,75 @@ const PlannerPage = () => {
                     )}
                 </div>
 
-                {/* Right Column - Product Selection */}
+                {/* Right Column - Product Selection & Planetary Network Planner */}
                 <div className="glass-panel" style={{ flex: '1', padding: 'var(--space-lg)', borderRadius: 'var(--radius-md)', height: 'fit-content' }}>
-                    <h3 className="text-primary" style={{ marginBottom: 'var(--space-md)' }}>Target Commodity</h3>
+                    
+                    {/* Skills configuration header */}
+                    <div style={{ background: 'rgba(0,0,0,0.4)', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-md)', border: '1px solid var(--color-border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '1.2rem' }}>📡</span>
+                                <span style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>EVE PI Telemetry</span>
+                            </div>
+                            {user ? (
+                                <div style={{ fontSize: '0.8rem', background: 'rgba(0, 217, 247, 0.1)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '12px' }}>
+                                    API Sync Active
+                                </div>
+                            ) : (
+                                <div style={{ fontSize: '0.8rem', background: 'rgba(255, 102, 102, 0.1)', color: 'var(--color-danger)', padding: '2px 8px', borderRadius: '12px' }}>
+                                    API Offline (Manual Skills)
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div style={{ marginTop: 'var(--space-sm)', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem' }}>
+                            {user ? (
+                                <>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="text-muted">Interplanetary Consolidation:</span>
+                                        <span className="text-success" style={{ fontWeight: 'bold' }}>Level {piSkills.interplanetaryConsolidation} ({effectiveIcSkill + 1} Planets)</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="text-muted">Command Center Upgrades:</span>
+                                        <span className="text-success" style={{ fontWeight: 'bold' }}>Level {piSkills.commandCenterUpgrades} ({CC_UPGRADES_RESOURCES[effectiveCcuSkill]?.name} CC)</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span className="text-muted">Interplanetary Consolidation:</span>
+                                        <select 
+                                            value={manualIcSkill} 
+                                            onChange={(e) => setManualIcSkill(Number(e.target.value))}
+                                            style={{ background: 'rgba(0,0,0,0.5)', color: 'white', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '2px 6px', fontSize: '0.8rem' }}
+                                        >
+                                            {[0, 1, 2, 3, 4, 5].map(lvl => (
+                                                <option key={lvl} value={lvl}>Level {lvl} ({lvl + 1} Planets)</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span className="text-muted">Command Center Upgrades:</span>
+                                        <select 
+                                            value={manualCcuSkill} 
+                                            onChange={(e) => setManualCcuSkill(Number(e.target.value))}
+                                            style={{ background: 'rgba(0,0,0,0.5)', color: 'white', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '2px 6px', fontSize: '0.8rem' }}
+                                        >
+                                            {[0, 1, 2, 3, 4, 5].map(lvl => (
+                                                <option key={lvl} value={lvl}>Level {lvl} ({CC_UPGRADES_RESOURCES[lvl]?.name} CC)</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <h3 className="text-primary" style={{ marginBottom: 'var(--space-md)' }}>Global Product Search</h3>
                     
                     <input
                         type="text"
-                        placeholder="Add commodity to plan (e.g. Broadcast Node)"
+                        placeholder="Search & add commodity (e.g. Broadcast Node)"
                         value={productSearch}
                         onChange={(e) => setProductSearch(e.target.value)}
                         style={{
@@ -606,64 +792,395 @@ const PlannerPage = () => {
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
-                        {selectedProducts.map(p => {
-                            const prices = productPrices[p.id];
-                            return (
-                                <div key={p.id} style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-sm)', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                            <span style={{ fontWeight: 'bold' }}>{p.name} <span className="text-muted" style={{ fontWeight: 'normal' }}>({p.tier})</span></span>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                    {/* Global selected products summary */}
+                    {selectedProducts.length > 0 && (
+                        <div style={{ marginBottom: 'var(--space-lg)' }}>
+                            <div className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '6px' }}>Selected Commodities in Plan:</div>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                {selectedProducts.map(p => {
+                                    const prices = productPrices[p.id];
+                                    const planetYield = getPlanetProducedHourlyYield(p.id);
+                                    const qty = planetYield > 0 ? planetYield : (targetQuantities[p.id] || 1);
+                                    return (
+                                        <div key={p.id} style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 'var(--space-sm)', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--color-border)', borderRadius: '4px', marginBottom: '6px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontWeight: 'bold' }}>{p.name} <span className="text-muted" style={{ fontWeight: 'normal' }}>({p.tier})</span></span>
+                                                <button 
+                                                    onClick={() => handleRemoveProduct(p.id)}
+                                                    style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontWeight: 'bold', padding: 0 }}
+                                                    title={`Remove ${p.name}`}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                            
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
                                                 <span className="text-muted" style={{ fontSize: '0.8rem' }}>Target Qty / hr:</span>
                                                 <input 
                                                     type="number" 
                                                     min="1" 
-                                                    value={targetQuantities[p.id] || 1} 
+                                                    value={qty} 
+                                                    disabled={planetYield > 0}
                                                     onChange={(e) => handleQuantityChange(p.id, Number(e.target.value))}
                                                     style={{
                                                         width: '70px',
                                                         padding: '2px 8px',
-                                                        background: 'rgba(0,0,0,0.3)',
+                                                        background: planetYield > 0 ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)',
                                                         border: '1px solid var(--color-border)',
-                                                        color: 'var(--color-text-main)',
-                                                        borderRadius: '4px'
+                                                        color: planetYield > 0 ? 'var(--color-primary)' : 'var(--color-text-main)',
+                                                        borderRadius: '4px',
+                                                        fontWeight: planetYield > 0 ? 'bold' : 'normal'
                                                     }}
                                                 />
+                                                {planetYield > 0 && <span className="text-success" style={{ fontSize: '0.75rem' }}>Auto (Planet Setup)</span>}
                                             </div>
-                                            {(() => {
-                                                const qtyHr = targetQuantities[p.id] || 1;
-                                                return (
-                                                    <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap', marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                                        <span>Day: <span style={{ color: 'var(--color-primary)' }}>{(qtyHr * 24).toLocaleString()}</span></span>
-                                                        <span>Week: <span style={{ color: 'var(--color-primary)' }}>{(qtyHr * 168).toLocaleString()}</span></span>
-                                                        <span>Month (4w): <span style={{ color: 'var(--color-primary)' }}>{(qtyHr * 672).toLocaleString()}</span></span>
-                                                    </div>
-                                                );
-                                            })()}
+
+                                            <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                                <span>Day: <span style={{ color: 'var(--color-primary)' }}>{(qty * 24).toLocaleString()}</span></span>
+                                                <span>Week: <span style={{ color: 'var(--color-primary)' }}>{(qty * 168).toLocaleString()}</span></span>
+                                                <span>Month: <span style={{ color: 'var(--color-primary)' }}>{(qty * 672).toLocaleString()}</span></span>
+                                            </div>
+
+                                            <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: '6px', fontSize: '0.8rem', borderTop: '1px dashed rgba(255,255,255,0.05)', paddingTop: '4px' }}>
+                                                {prices?.loading ? (
+                                                    <span className="text-muted">Loading prices...</span>
+                                                ) : prices?.error ? (
+                                                    <span className="text-danger">Error loading prices</span>
+                                                ) : prices ? (
+                                                    <>
+                                                        <span><span className="text-muted">Sell:</span> {new Intl.NumberFormat('en-US').format(prices.sellPrice)} ISK</span>
+                                                        <span><span className="text-muted">Buy:</span> <span className="text-success">{new Intl.NumberFormat('en-US').format(prices.buyPrice)} ISK</span></span>
+                                                    </>
+                                                ) : null}
+                                            </div>
                                         </div>
-                                        <button 
-                                            onClick={() => handleRemoveProduct(p.id)}
-                                            style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontWeight: 'bold' }}
-                                        >
-                                            Remove
-                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Planetary Network Tabs */}
+                    <div style={{ marginTop: 'var(--space-lg)' }}>
+                        <h3 className="text-primary" style={{ marginBottom: 'var(--space-sm)' }}>Planet Network Setup</h3>
+                        <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: 'var(--space-md)' }}>Configure individual colony factory layouts based on CC Upgrade capacity.</p>
+                        
+                        {/* Tab Bar */}
+                        <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px', marginBottom: 'var(--space-md)' }}>
+                            {Array.from({ length: effectiveIcSkill + 1 }).map((_, idx) => {
+                                const pNum = idx + 1;
+                                const isActive = activePlanetTab === pNum;
+                                return (
+                                    <button
+                                        key={pNum}
+                                        onClick={() => setActivePlanetTab(pNum)}
+                                        style={{
+                                            padding: '8px 16px',
+                                            background: isActive ? 'rgba(0, 217, 247, 0.1)' : 'transparent',
+                                            color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                            border: 'none',
+                                            borderBottom: isActive ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                            cursor: 'pointer',
+                                            fontWeight: isActive ? 'bold' : 'normal',
+                                            whiteSpace: 'nowrap',
+                                            transition: 'all 0.15s ease'
+                                        }}
+                                    >
+                                        Planet {pNum}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Active Tab Panel Content */}
+                        {(() => {
+                            const getConfigForPlanet = (planetIdx) => {
+                                return planetProductionConfigs[planetIdx] || {
+                                    commodityId: selectedProducts[0]?.id || '',
+                                    factoriesCount: 0,
+                                    storageCount: 1,
+                                    launchpadCount: 1,
+                                    customHours: 24,
+                                    isExtracting: false,
+                                    ecuCount: 1,
+                                    extractorHeads: 4
+                                };
+                            };
+
+                            const updateConfigForPlanet = (planetIdx, key, val) => {
+                                setPlanetProductionConfigs(prev => {
+                                    const current = prev[planetIdx] || {
+                                        commodityId: selectedProducts[0]?.id || '',
+                                        factoriesCount: 0,
+                                        storageCount: 1,
+                                        launchpadCount: 1,
+                                        customHours: 24,
+                                        isExtracting: false,
+                                        ecuCount: 1,
+                                        extractorHeads: 4
+                                    };
+                                    return {
+                                        ...prev,
+                                        [planetIdx]: {
+                                            ...current,
+                                            [key]: val
+                                        }
+                                    };
+                                });
+                            };
+
+                            const config = getConfigForPlanet(activePlanetTab);
+                            const activeProduct = selectedProducts.find(p => p.id === Number(config.commodityId)) || selectedProducts[0];
+                            
+                            if (!activeProduct) {
+                                return (
+                                    <div style={{ padding: 'var(--space-lg) 0', textAlign: 'center', color: 'var(--color-text-muted)', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-sm)' }}>
+                                        <p>No commodities selected in the planner.</p>
+                                        <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>Please search and add a target commodity above or select one from the "Possible Products" lists in the Left Column.</p>
                                     </div>
-                                    <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-xs)', fontSize: '0.9rem' }}>
-                                        {prices?.loading ? (
-                                            <span className="text-muted">Loading prices...</span>
-                                        ) : prices?.error ? (
-                                            <span className="text-danger">Error loading prices</span>
-                                        ) : prices ? (
-                                            <>
-                                                <span><span className="text-muted">Sell:</span> {new Intl.NumberFormat('en-US').format(prices.sellPrice)} ISK</span>
-                                                <span><span className="text-muted">Buy:</span> <span className="text-success">{new Intl.NumberFormat('en-US').format(prices.buyPrice)} ISK</span></span>
-                                            </>
-                                        ) : null}
+                                );
+                            }
+
+                            // Calculate max factories
+                            const calc = calculateMaxFactories(
+                                effectiveCcuSkill,
+                                config.storageCount,
+                                config.launchpadCount,
+                                config.isExtracting,
+                                config.ecuCount,
+                                config.extractorHeads,
+                                activeProduct.tier
+                            );
+
+                            const maxFactories = calc.maxFactories;
+                            
+                            // Automatically adjust factories count if it exceeds max
+                            const factoriesCount = Math.min(config.factoriesCount, maxFactories);
+                            if (factoriesCount !== config.factoriesCount) {
+                                // Defer update to avoid state update during render cycle
+                                setTimeout(() => updateConfigForPlanet(activePlanetTab, 'factoriesCount', factoriesCount), 0);
+                            }
+
+                            const hourlyYieldPerFactory = activeProduct.tier === 'P1' ? (activeProduct.outputYield * 2) : activeProduct.outputYield;
+                            const totalHourlyYield = factoriesCount * hourlyYieldPerFactory;
+                            
+                            const globalMultiplier = getTimeframeMultiplier(timeframe);
+                            const globalYield = totalHourlyYield * globalMultiplier;
+                            
+                            const customHours = config.customHours || 24;
+                            const customYield = totalHourlyYield * customHours;
+
+                            const pgPercent = Math.min(100, (calc.usedPg / calc.totalPg) * 100);
+                            const cpuPercent = Math.min(100, (calc.usedCpu / calc.totalCpu) * 100);
+
+                            return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                                    
+                                    {/* Commodity Dropdown */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <label className="text-muted" style={{ fontSize: '0.85rem' }}>Planet Target Commodity:</label>
+                                        <select
+                                            value={config.commodityId || activeProduct.id}
+                                            onChange={(e) => updateConfigForPlanet(activePlanetTab, 'commodityId', Number(e.target.value))}
+                                            style={{
+                                                width: '100%',
+                                                padding: '10px',
+                                                background: 'rgba(0,0,0,0.4)',
+                                                border: '1px solid var(--color-border)',
+                                                color: 'white',
+                                                borderRadius: '4px',
+                                                outline: 'none'
+                                            }}
+                                        >
+                                            {selectedProducts.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name} ({p.tier})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* CC Upgrade resources overview */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: 'var(--space-sm) var(--space-md)', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>Planet Powergrid & CPU Usage</span>
+                                        
+                                        {/* PG Usage */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                                <span className="text-muted">Powergrid:</span>
+                                                <span style={{ color: pgPercent > 90 ? 'var(--color-danger)' : 'white' }}>{calc.usedPg.toLocaleString()} / {calc.totalPg.toLocaleString()} MW ({pgPercent.toFixed(0)}%)</span>
+                                            </div>
+                                            <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', background: pgPercent > 90 ? 'var(--color-danger)' : 'var(--color-primary)', width: `${pgPercent}%`, transition: 'width 0.2s' }}></div>
+                                            </div>
+                                        </div>
+
+                                        {/* CPU Usage */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                                <span className="text-muted">CPU:</span>
+                                                <span style={{ color: cpuPercent > 90 ? 'var(--color-danger)' : 'white' }}>{calc.usedCpu.toLocaleString()} / {calc.totalCpu.toLocaleString()} tf ({cpuPercent.toFixed(0)}%)</span>
+                                            </div>
+                                            <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', background: cpuPercent > 90 ? 'var(--color-danger)' : 'var(--color-primary)', width: `${cpuPercent}%`, transition: 'width 0.2s' }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Colony Infrastructure settings */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)', background: 'rgba(255,255,255,0.02)', padding: 'var(--space-sm)', borderRadius: '4px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <label className="text-muted" style={{ fontSize: '0.8rem' }}>Storage Facilities:</label>
+                                            <input 
+                                                type="number"
+                                                min="0"
+                                                max="10"
+                                                value={config.storageCount}
+                                                onChange={(e) => updateConfigForPlanet(activePlanetTab, 'storageCount', Math.max(0, Number(e.target.value)))}
+                                                style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <label className="text-muted" style={{ fontSize: '0.8rem' }}>Launchpads:</label>
+                                            <input 
+                                                type="number"
+                                                min="0"
+                                                max="10"
+                                                value={config.launchpadCount}
+                                                onChange={(e) => updateConfigForPlanet(activePlanetTab, 'launchpadCount', Math.max(0, Number(e.target.value)))}
+                                                style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* On site extraction toggle and config */}
+                                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: 'var(--space-sm)', borderRadius: '4px' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', userSelect: 'none' }}>
+                                            <input 
+                                                type="checkbox"
+                                                checked={config.isExtracting}
+                                                onChange={(e) => updateConfigForPlanet(activePlanetTab, 'isExtracting', e.target.checked)}
+                                                style={{ cursor: 'pointer' }}
+                                            />
+                                            <span>Extract Raw Resources (P0) On-site?</span>
+                                        </label>
+                                        
+                                        {config.isExtracting && (
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-sm)' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <label className="text-muted" style={{ fontSize: '0.75rem' }}>ECUs:</label>
+                                                    <input 
+                                                        type="number"
+                                                        min="1"
+                                                        max="3"
+                                                        value={config.ecuCount}
+                                                        onChange={(e) => updateConfigForPlanet(activePlanetTab, 'ecuCount', Math.max(1, Number(e.target.value)))}
+                                                        style={{ padding: '4px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', fontSize: '0.8rem' }}
+                                                    />
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <label className="text-muted" style={{ fontSize: '0.75rem' }}>Extractor Heads:</label>
+                                                    <input 
+                                                        type="number"
+                                                        min="0"
+                                                        max="10"
+                                                        value={config.extractorHeads}
+                                                        onChange={(e) => updateConfigForPlanet(activePlanetTab, 'extractorHeads', Math.max(0, Number(e.target.value)))}
+                                                        style={{ padding: '4px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px', fontSize: '0.8rem' }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Factory count selector */}
+                                    <div style={{ background: 'rgba(0, 217, 247, 0.03)', border: '1px solid rgba(0, 217, 247, 0.1)', padding: 'var(--space-md)', borderRadius: 'var(--radius-sm)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                            <span style={{ fontWeight: 'bold' }}>Industry Factories:</span>
+                                            <span style={{ color: 'var(--color-primary)', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                                {factoriesCount} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'normal' }}>/ {maxFactories} max</span>
+                                            </span>
+                                        </div>
+
+                                        <input 
+                                            type="range"
+                                            min="0"
+                                            max={maxFactories}
+                                            value={factoriesCount}
+                                            onChange={(e) => updateConfigForPlanet(activePlanetTab, 'factoriesCount', Number(e.target.value))}
+                                            style={{
+                                                width: '100%',
+                                                accentColor: 'var(--color-primary)',
+                                                cursor: 'pointer',
+                                                marginBottom: 'var(--space-xs)'
+                                            }}
+                                        />
+                                        
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                            <span>0 factories</span>
+                                            <span>{maxFactories} factories max</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Target hours timeframe selection */}
+                                    <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: 'var(--space-md)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                            <span style={{ fontWeight: 'bold' }}>Custom Production Timeframe:</span>
+                                            <span style={{ color: 'var(--color-primary)', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                                {customHours} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'normal' }}>hours</span>
+                                            </span>
+                                        </div>
+
+                                        <input 
+                                            type="number"
+                                            min="1"
+                                            max="720"
+                                            value={customHours}
+                                            onChange={(e) => updateConfigForPlanet(activePlanetTab, 'customHours', Math.max(1, Number(e.target.value)))}
+                                            style={{
+                                                width: '100%',
+                                                padding: '8px',
+                                                background: 'rgba(0,0,0,0.4)',
+                                                border: '1px solid var(--color-border)',
+                                                color: 'white',
+                                                borderRadius: '4px',
+                                                marginBottom: '10px'
+                                            }}
+                                        />
+
+                                        <input 
+                                            type="range"
+                                            min="1"
+                                            max="168"
+                                            value={Math.min(168, customHours)}
+                                            onChange={(e) => updateConfigForPlanet(activePlanetTab, 'customHours', Number(e.target.value))}
+                                            style={{
+                                                width: '100%',
+                                                accentColor: 'var(--color-primary)',
+                                                cursor: 'pointer'
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Calculations output */}
+                                    <div style={{ background: 'rgba(0, 217, 247, 0.05)', padding: 'var(--space-md)', borderRadius: 'var(--radius-sm)', borderLeft: '4px solid var(--color-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'white' }}>Estimated Output Yield:</div>
+                                        
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                                            <span className="text-muted">Planner Timeframe ({timeframe === 'hour' ? '1 hr' : timeframe === 'day' ? '24 hrs' : timeframe === 'week' ? '168 hrs' : '672 hrs'}):</span>
+                                            <span className="text-primary" style={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                                                {globalYield.toLocaleString()} <span style={{ fontSize: '0.75rem', fontWeight: 'normal' }}>units</span>
+                                            </span>
+                                        </div>
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px' }}>
+                                            <span className="text-muted">Custom Hours Timeframe ({customHours} hrs):</span>
+                                            <span className="text-accent" style={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                                                {customYield.toLocaleString()} <span style={{ fontSize: '0.75rem', fontWeight: 'normal' }}>units</span>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             );
-                        })}
+                        })()}
                     </div>
                 </div>
             </div>
@@ -799,7 +1316,8 @@ const PlannerPage = () => {
                                         );
                                         
                                         const timeframeMultiplier = getTimeframeMultiplier(timeframe);
-                                        const targetYield = (targetQuantities[p.id] || 1) * timeframeMultiplier;
+                                        const planetYield = getPlanetProducedHourlyYield(p.id);
+                                        const targetYield = (planetYield > 0 ? planetYield : (targetQuantities[p.id] || 1)) * timeframeMultiplier;
                                         const dailyRevenue = targetYield * prices.sellPrice;
                                         const dailyCost = targetYield * prices.costPerUnit;
                                         const dailyProfit = dailyRevenue - dailyCost;
@@ -880,9 +1398,13 @@ const PlannerPage = () => {
             {selectedProducts.length > 0 && (
                 <div style={{ marginTop: 'var(--space-xl)' }}>
                     <h2 style={{ marginBottom: 'var(--space-md)', fontWeight: 300 }}>Production Flowcharts</h2>
-                    {selectedProducts.map(p => (
-                        <ProductFlowchart key={p.id} product={p} selectedHub={selectedHub} targetQuantity={targetQuantities[p.id] || 1} timeframe={timeframe} />
-                    ))}
+                    {selectedProducts.map(p => {
+                        const planetYield = getPlanetProducedHourlyYield(p.id);
+                        const qty = planetYield > 0 ? planetYield : (targetQuantities[p.id] || 1);
+                        return (
+                            <ProductFlowchart key={p.id} product={p} selectedHub={selectedHub} targetQuantity={qty} timeframe={timeframe} />
+                        );
+                    })}
                 </div>
             )}
 

@@ -1,3 +1,5 @@
+import { commodities, RESOURCE_TO_PLANETS } from './pi_data';
+
 // Mock data for Systems and Planets to avoid loading the entire EVE SDE into the browser.
 export const mockSystems = [
     {
@@ -37,7 +39,7 @@ export const mockSystems = [
         planets: [
             { name: 'Hek I', type: 'Barren' },
             { name: 'Hek II', type: 'Temperate' },
-            { name: 'Hek III', type: 'Ocean' },
+            { name: 'Hek III', type: 'Oceanic' }, // Fixed to Oceanic to match standard
             { name: 'Hek IV', type: 'Gas' }
         ]
     },
@@ -51,20 +53,9 @@ export const mockSystems = [
     }
 ];
 
-export const extractablePlanetsMap = {
-    'Aqueous Liquids': ['Barren', 'Gas', 'Ice', 'Oceanic', 'Temperate', 'Storm'],
-    'Autotrophs': ['Temperate'],
-    'Base Metals': ['Barren', 'Gas', 'Ice', 'Lava', 'Oceanic', 'Plasma', 'Storm', 'Temperate'],
-    'Carbon Compounds': ['Barren', 'Oceanic', 'Temperate'],
-    'Complex Organisms': ['Oceanic', 'Temperate'],
-    'Felsic Magma': ['Lava'],
-    'Heavy Metals': ['Ice', 'Lava', 'Plasma'],
-    'Ionic Solutions': ['Gas', 'Storm'],
-    'Microorganisms': ['Barren', 'Ice', 'Oceanic', 'Temperate'],
-    'Noble Gas': ['Gas', 'Storm'],
-    'Noble Metals': ['Barren', 'Plasma'],
-    'Non-CS Crystals': ['Lava', 'Plasma'],
-    'Planktic Colonies': ['Oceanic'],
-    'Reactive Gas': ['Gas'],
-    'Suspended Plasma': ['Plasma', 'Storm']
-};
+export const extractablePlanetsMap = {};
+commodities.forEach(c => {
+    if (c.tier === 'P0') {
+        extractablePlanetsMap[c.name] = RESOURCE_TO_PLANETS[c.id] || [];
+    }
+});
