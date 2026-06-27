@@ -12,11 +12,11 @@ import { loadSystemsDatabase, searchSystems } from '../../utils/systemLookup';
 
 const CC_UPGRADES_RESOURCES = [
     { level: 0, name: "Basic", pg: 6000, cpu: 1675 },
-    { level: 1, name: "Medium", pg: 9000, cpu: 2100 },
-    { level: 2, name: "Advanced", pg: 12000, cpu: 2525 },
-    { level: 3, name: "Advanced II", pg: 15000, cpu: 2950 },
-    { level: 4, name: "Advanced III", pg: 18000, cpu: 3375 },
-    { level: 5, name: "Elite", pg: 21000, cpu: 3800 }
+    { level: 1, name: "Medium", pg: 9000, cpu: 7057 },
+    { level: 2, name: "Advanced", pg: 12000, cpu: 12136 },
+    { level: 3, name: "Advanced II", pg: 15000, cpu: 17215 },
+    { level: 4, name: "Advanced III", pg: 17000, cpu: 21315 },
+    { level: 5, name: "Elite", pg: 19000, cpu: 25415 }
 ];
 
 const calculateMaxStructures = (ccLevel, storageCount, launchpadCount, factoriesCount, isExtracting, ecuCount, extractorHeads, commodityTier) => {
