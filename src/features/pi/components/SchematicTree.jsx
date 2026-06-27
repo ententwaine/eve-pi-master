@@ -38,18 +38,27 @@ const formatTime = (tier, quantity) => {
 };
 
 // --- Recursive Tree Builder ---
-const buildTree = (itemId, quantity = 1, isRoot = true) => {
+const buildTree = (itemId, quantity = 1, rootTier = null, isRoot = true) => {
     const item = commodities.find(c => c.id === Number(itemId));
     if (!item) return null;
 
-    const yieldAmount = item.outputYield || 1;
-    const cycles = Math.ceil(quantity / yieldAmount);
-    const displayQty = isRoot ? cycles * yieldAmount : quantity;
+    const currentRootTier = isRoot ? item.tier : rootTier;
+
+    let displayQty = quantity;
+    if (!isRoot && currentRootTier) {
+        const rootLevel = Number(currentRootTier.replace('P', ''));
+        const currentLevel = Number(item.tier.replace('P', ''));
+        const diff = rootLevel - currentLevel;
+        if (item.tier === 'P0') {
+            displayQty = 3000 * Math.pow(2, rootLevel - 1) * quantity;
+        } else {
+            displayQty = Math.pow(2, diff) * quantity;
+        }
+    }
 
     // Calculate inputs
     const children = (item.inputs || []).map(input => {
-        const reqQty = cycles * input.quantity;
-        return buildTree(input.id, reqQty, false);
+        return buildTree(input.id, quantity, currentRootTier, false);
     }).filter(Boolean); // remove nulls
 
     return {

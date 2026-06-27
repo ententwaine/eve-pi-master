@@ -391,35 +391,43 @@ const PlannerPage = () => {
         const bom = { P4: {}, P3: {}, P2: {}, P1: {}, P0: {} };
         const flatItems = [];
         
-        const traverseGlobal = (itemId, qtyNeeded) => {
+        const traverseGlobal = (itemId, rootQty, rootTier) => {
             const item = commodities.find(c => c.id === Number(itemId));
             if (!item) return;
             
             const tier = item.tier;
+            const rootLevel = Number(rootTier.replace('P', ''));
+            const currentLevel = Number(tier.replace('P', ''));
+            const diff = rootLevel - currentLevel;
+            
+            let qtyNeeded = rootQty;
+            if (tier === 'P0') {
+                qtyNeeded = 3000 * Math.pow(2, rootLevel - 1) * rootQty;
+            } else {
+                qtyNeeded = Math.pow(2, diff) * rootQty;
+            }
+            
             if (bom[tier]) {
                 bom[tier][itemId] = (bom[tier][itemId] || 0) + qtyNeeded;
             }
             
             if (tier === 'P0') return;
             
-            const cycles = Math.ceil(qtyNeeded / (item.outputYield || 1));
             for (const input of item.inputs) {
-                traverseGlobal(input.id, input.quantity * cycles);
+                traverseGlobal(input.id, rootQty, rootTier);
             }
         };
         
         selectedProducts.forEach(p => {
             const planetYield = getPlanetProducedHourlyYield(p.id);
             const targetQty = planetYield;
-            const yieldAmount = p.outputYield || 1;
-            const cycles = Math.ceil(targetQty / yieldAmount);
-            const producedQty = cycles * yieldAmount;
+            
             // First add the target product itself
             if (bom[p.tier]) {
-                bom[p.tier][p.id] = (bom[p.tier][p.id] || 0) + producedQty;
+                bom[p.tier][p.id] = (bom[p.tier][p.id] || 0) + targetQty;
             }
             for (const input of p.inputs) {
-                traverseGlobal(input.id, input.quantity * cycles);
+                traverseGlobal(input.id, targetQty, p.tier);
             }
         });
 
@@ -431,7 +439,7 @@ const PlannerPage = () => {
         });
         
         return { globalBom: bom, flatBomItems: flatItems };
-    }, [selectedProducts, targetQuantities, getPlanetProducedHourlyYield]);
+    }, [selectedProducts, getPlanetProducedHourlyYield]);
 
     const totalPocoTax = React.useMemo(() => {
         if (!selectedSystem || !flatBomItems.length) return 0;
