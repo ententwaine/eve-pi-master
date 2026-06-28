@@ -309,9 +309,13 @@ const PlanetCard = ({ planet, token, userId, details, prices, onReportStorage })
                 </div>
             )}
 
-            {(storage.length > 0 || launchpads.length > 0) && (
-                <div className="lp-section">
-                    <div className="lp-section-title">Storage & Routing Capacity</div>
+            <div className="lp-section">
+                <div className="lp-section-title">Storage & Routing Capacity</div>
+                {storage.length === 0 && launchpads.length === 0 ? (
+                    <div className="text-muted" style={{ padding: 'var(--space-md) var(--space-sm)', background: 'rgba(255,255,255,0.01)', borderRadius: 'var(--radius-sm)', border: '1px dashed rgba(255,255,255,0.05)', textAlign: 'center', fontSize: '0.75rem', marginTop: 'var(--space-sm)' }}>
+                        No storage facilities or launchpads active on this planet.
+                    </div>
+                ) : (
                     <div className="lp-storage-bars">
                         {launchpads.map((lp, i) => {
                             const percent = calculateCapacity(lp, 10000);
@@ -394,8 +398,8 @@ const PlanetCard = ({ planet, token, userId, details, prices, onReportStorage })
                             );
                         })}
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };
