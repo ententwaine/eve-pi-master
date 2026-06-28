@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchPlanetaryColonies, fetchPlanetDetails, fetchUniversePlanet, fetchUniverseSystem } from '../../services/esiApi';
-import { getStructureDataByTypeId } from '../../data/pi_structures';
+import { fetchPlanetaryColonies, fetchPlanetDetails, fetchUniversePlanet, fetchUniverseSystem, fetchUniverseType } from '../../services/esiApi';
+import { getStructureDataByTypeId, registerStructureType } from '../../data/pi_structures';
 import { commodities } from '../../data/pi_data';
 import './CommandCenterPage.css';
 
@@ -22,6 +22,19 @@ const PlanetCard = ({ planet, token, userId }) => {
     useEffect(() => {
         const loadDetails = async () => {
             const data = await fetchPlanetDetails(userId, planet.planet_id, token);
+            
+            if (data && data.pins) {
+                for (const pin of data.pins) {
+                    const struct = getStructureDataByTypeId(pin.type_id);
+                    if (struct.name.startsWith('Unknown Structure')) {
+                        const typeInfo = await fetchUniverseType(pin.type_id);
+                        if (typeInfo) {
+                            registerStructureType(pin.type_id, typeInfo);
+                        }
+                    }
+                }
+            }
+            
             setDetails(data);
             
             const uPlanet = await fetchUniversePlanet(planet.planet_id);

@@ -156,3 +156,18 @@ export const getHighestBuyOrder = async (regionId, typeId, systemId = null) => {
     // Find the maximum price
     return validOrders.reduce((max, p) => p.price > max ? p.price : max, validOrders[0].price);
 };
+
+export const fetchUniverseType = async (typeId) => {
+    const cacheKey = `universe-type-${typeId}`;
+    if (cache.has(cacheKey)) return cache.get(cacheKey).data;
+    try {
+        const response = await fetch(`${ESI_BASE_URL}/universe/types/${typeId}/?datasource=tranquility`);
+        if (!response.ok) throw new Error(`Failed to fetch universe type ${typeId}`);
+        const data = await response.json();
+        cache.set(cacheKey, { timestamp: Date.now(), data });
+        return data;
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};

@@ -62,32 +62,68 @@ export const PI_STRUCTURES = {
     }
 };
 
+export const DYNAMIC_STRUCTURE_REGISTRY = {};
+
+export const registerStructureType = (typeId, typeInfo) => {
+    const id = Number(typeId);
+    const name = typeInfo.name;
+    const lowerName = name.toLowerCase();
+    
+    let structureData = null;
+    if (lowerName.includes('command center')) {
+        structureData = { ...PI_STRUCTURES.command_center, name };
+    } else if (lowerName.includes('extractor')) {
+        structureData = { ...PI_STRUCTURES.extractor_control_unit, name };
+    } else if (lowerName.includes('industry') || lowerName.includes('processor')) {
+        if (lowerName.includes('basic')) {
+            structureData = { ...PI_STRUCTURES.basic_industry_facility, name };
+        } else if (lowerName.includes('advanced')) {
+            structureData = { ...PI_STRUCTURES.advanced_industry_facility, name };
+        } else if (lowerName.includes('high-tech') || lowerName.includes('high tech')) {
+            structureData = { ...PI_STRUCTURES.high_tech_industry_facility, name };
+        } else {
+            structureData = { ...PI_STRUCTURES.basic_industry_facility, name };
+        }
+    } else if (lowerName.includes('storage')) {
+        structureData = { ...PI_STRUCTURES.storage_facility, name };
+    } else if (lowerName.includes('launchpad') || lowerName.includes('spaceport')) {
+        structureData = { ...PI_STRUCTURES.launchpad, name };
+    }
+    
+    if (structureData) {
+        DYNAMIC_STRUCTURE_REGISTRY[id] = structureData;
+    }
+};
+
 // Helper function to map ESI type_id to our internal structure mapping
 export const getStructureDataByTypeId = (typeId) => {
-    // There are many specific typeIDs for structures based on planet type (e.g. Barren CC vs Gas CC)
-    // Here we map known ranges or groups to our general structures for UI purposes.
+    const id = Number(typeId);
+    
+    if (DYNAMIC_STRUCTURE_REGISTRY[id]) {
+        return DYNAMIC_STRUCTURE_REGISTRY[id];
+    }
     
     // Command Centers (types around 2524, 2525, 2530, etc.)
-    if ([2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(typeId)) return PI_STRUCTURES.command_center;
+    if ([2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(id)) return PI_STRUCTURES.command_center;
     
     // Extractors (types around 2545, etc.)
-    if ([2545, 2546, 2547, 2552, 2553, 2556, 2557, 2560, 2561, 2562, 3060, 3061, 3062, 3063, 3064, 3067, 3068].includes(typeId)) return PI_STRUCTURES.extractor_control_unit;
+    if ([2545, 2546, 2547, 2552, 2553, 2556, 2557, 2560, 2561, 2562, 3060, 3061, 3062, 3063, 3064, 3067, 3068].includes(id)) return PI_STRUCTURES.extractor_control_unit;
     
     // Basic Industry
-    if ([2533, 2534, 2543, 2550, 2554, 2558, 2589, 3065].includes(typeId)) return PI_STRUCTURES.basic_industry_facility;
+    if ([2533, 2534, 2543, 2550, 2554, 2558, 2589, 3065].includes(id)) return PI_STRUCTURES.basic_industry_facility;
     
     // Advanced Industry
-    if ([2544, 2548, 2551, 2564, 2565, 2566, 2575, 2580].includes(typeId)) return PI_STRUCTURES.advanced_industry_facility;
+    if ([2544, 2548, 2551, 2564, 2565, 2566, 2575, 2580].includes(id)) return PI_STRUCTURES.advanced_industry_facility;
     
     // High-Tech
-    if ([2563].includes(typeId)) return PI_STRUCTURES.high_tech_industry_facility;
+    if ([2563].includes(id)) return PI_STRUCTURES.high_tech_industry_facility;
     
     // Storage
-    if ([2536, 2538, 2541, 2573, 2583, 2586, 2588, 3066].includes(typeId)) return PI_STRUCTURES.storage_facility;
+    if ([2257, 2535, 2536, 2538, 2541, 2558, 2573, 2583, 2586, 2588, 3066].includes(id)) return PI_STRUCTURES.storage_facility;
     
     // Launchpad
-    if ([2542, 2567, 2568, 2569, 2572, 2578, 2584, 2585].includes(typeId)) return PI_STRUCTURES.launchpad;
+    if ([2256, 2449, 2542, 2555, 2567, 2568, 2569, 2572, 2578, 2584, 2585].includes(id)) return PI_STRUCTURES.launchpad;
 
     // Fallback
-    return { name: `Unknown Structure (${typeId})`, power: 0, cpu: 0, icon: `https://images.evetech.net/types/${typeId}/icon?size=64` };
+    return { name: `Unknown Structure (${id})`, power: 0, cpu: 0, icon: `https://images.evetech.net/types/${id}/icon?size=64` };
 };
