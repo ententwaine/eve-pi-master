@@ -5,7 +5,6 @@ import { getStructureDataByTypeId, registerStructureType } from '../../data/pi_s
 import { commodities } from '../../data/pi_data';
 import './CommandCenterPage.css';
 
-// 3A. Volumetric Properties Map (m³ per unit)
 const VOLUMES = {
     'P0': 0.01,
     'P1': 0.38,
@@ -14,7 +13,6 @@ const VOLUMES = {
     'P4': 100.0
 };
 
-// 3B. Valuation Fallback Pricing Matrix (ISK per unit)
 const FALLBACK_PRICES = {
     'P0': 8.0,
     'P1': 450.0,
@@ -23,31 +21,25 @@ const FALLBACK_PRICES = {
     'P4': 1200000.0
 };
 
-// PlanetCard component displaying telemetry and storage for a specific planet
-const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
-    const [details, setDetails] = useState(null);
+const PlanetCard = ({ planet, token, userId, details, prices, onReportStorage }) => {
     const [loading, setLoading] = useState(true);
     const [universePlanet, setUniversePlanet] = useState(null);
     const [universeSystem, setUniverseSystem] = useState(null);
 
     useEffect(() => {
-        const loadDetails = async () => {
-            const data = await fetchPlanetDetails(userId, planet.planet_id, token);
-            setDetails(data);
-            
+        const loadUniverseInfo = async () => {
             const uPlanet = await fetchUniversePlanet(planet.planet_id);
             if (uPlanet) {
                 setUniversePlanet(uPlanet);
                 const uSystem = await fetchUniverseSystem(uPlanet.system_id);
                 if (uSystem) setUniverseSystem(uSystem);
             }
-            
             setLoading(false);
         };
-        loadDetails();
-    }, [planet.planet_id, token, userId]);
+        loadUniverseInfo();
+    }, [planet.planet_id]);
 
-    // Report storage contents to parent for aggregation
+    // Report storage contents to parent
     useEffect(() => {
         if (!details || !onReportStorage) return;
         
@@ -58,7 +50,6 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
             const struct = getStructureDataByTypeId(pin.type_id);
             const structNameLower = struct.name.toLowerCase();
             
-            // Step 3: Redundant Structure Classification
             const isCommandCenter = structNameLower.includes('command center') || 
                                     [2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(Number(pin.type_id));
             const isExtractor = structNameLower.includes('extractor') || 
@@ -112,7 +103,7 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
         );
     }
 
-    // Process Pins and group them
+    // Process Pins (Buildings)
     const pins = details.pins || [];
     
     let commandCenter = null;
@@ -126,8 +117,6 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
         const pinData = { ...pin, structName: struct.name, icon: struct.icon };
 
         const structNameLower = struct.name.toLowerCase();
-        
-        // Step 3: Redundant Structure Classification
         const isCommandCenter = structNameLower.includes('command center') || 
                                 [2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(Number(pin.type_id));
         const isExtractor = structNameLower.includes('extractor') || 
@@ -148,7 +137,6 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
             industry.push(pinData);
         }
         else {
-            // Storage or Routing Facility Classification
             const isKnownStorage = structNameLower.includes('storage') || 
                                    [2257, 2535, 2536, 2538, 2541, 2558, 2573, 2583, 2586, 2588, 3066].includes(Number(pin.type_id));
             if (isKnownStorage) {
@@ -183,7 +171,6 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
         return `${hours}h ${minutes}m remaining`;
     };
 
-    // Step 4: Circular SVG indicators with green-to-red HSL gradient
     const renderCircleIndicator = (percent) => {
         const strokeColor = `hsl(${120 * (1 - percent / 100)}, 85%, 45%)`;
         return (
@@ -418,9 +405,10 @@ const CommandCenterPage = () => {
     const [planets, setPlanets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [prices, setPrices] = useState({});
+    const [planetsDetails, setPlanetsDetails] = useState({});
     const [planetStorageReports, setPlanetStorageReports] = useState({});
 
-    // Step 2: Parent Telemetry Pre-Loader
+    // Parent Telemetry Pre-Loader
     useEffect(() => {
         const loadPlanetsAndPrices = async () => {
             if (user && token) {
@@ -431,11 +419,21 @@ const CommandCenterPage = () => {
                     const uniqueUnknownTypeIds = new Set();
                     const uniqueStoredItemIds = new Set();
                     
-                    // Fetch details for all planets in parallel to scan pins
-                    const detailsPromises = data.map(p => fetchPlanetDetails(user.id, p.planet_id, token));
+                    // Fetch details for all planets sequentially or with retry fallback
+                    const detailsPromises = data.map(async (p) => {
+                        const details = await fetchPlanetDetails(user.id, p.planet_id, token);
+                        return { planetId: p.planet_id, details };
+                    });
                     const detailsList = await Promise.all(detailsPromises);
                     
-                    detailsList.forEach(planetDetails => {
+                    const detailsMap = {};
+                    detailsList.forEach(item => {
+                        detailsMap[item.planetId] = item.details;
+                    });
+                    setPlanetsDetails(detailsMap);
+                    
+                    detailsList.forEach(item => {
+                        const planetDetails = item.details;
                         if (planetDetails && planetDetails.pins) {
                             planetDetails.pins.forEach(pin => {
                                 const struct = getStructureDataByTypeId(pin.type_id);
@@ -502,7 +500,6 @@ const CommandCenterPage = () => {
         });
     }, []);
 
-    // Step 5: Render Bottom Aggregated Valuation Summary Panel
     const { totalsByTier, grandTotal } = React.useMemo(() => {
         const totals = { P4: 0, P3: 0, P2: 0, P1: 0, P0: 0 };
         let grand = 0;
@@ -580,6 +577,7 @@ const CommandCenterPage = () => {
                                 planet={p} 
                                 token={token} 
                                 userId={user.id} 
+                                details={planetsDetails[p.planet_id]}
                                 prices={prices}
                                 onReportStorage={handleReportStorage}
                             />

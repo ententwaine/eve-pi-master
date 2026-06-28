@@ -21,29 +21,25 @@ const FALLBACK_PRICES = {
     'P4': 1200000.0
 };
 
-const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
-    const [details, setDetails] = useState(null);
+const PlanetCard = ({ planet, token, userId, details, prices, onReportStorage }) => {
     const [loading, setLoading] = useState(true);
     const [universePlanet, setUniversePlanet] = useState(null);
     const [universeSystem, setUniverseSystem] = useState(null);
 
     useEffect(() => {
-        const loadDetails = async () => {
-            const data = await fetchPlanetDetails(userId, planet.planet_id, token);
-            setDetails(data);
-            
+        const loadUniverseInfo = async () => {
             const uPlanet = await fetchUniversePlanet(planet.planet_id);
             if (uPlanet) {
                 setUniversePlanet(uPlanet);
                 const uSystem = await fetchUniverseSystem(uPlanet.system_id);
                 if (uSystem) setUniverseSystem(uSystem);
             }
-            
             setLoading(false);
         };
-        loadDetails();
-    }, [planet.planet_id, token, userId]);
+        loadUniverseInfo();
+    }, [planet.planet_id]);
 
+    // Report storage contents to parent
     useEffect(() => {
         if (!details || !onReportStorage) return;
         
@@ -107,6 +103,7 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
         );
     }
 
+    // Process Pins (Buildings)
     const pins = details.pins || [];
     
     let commandCenter = null;
@@ -408,8 +405,10 @@ const TestPage = () => {
     const [planets, setPlanets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [prices, setPrices] = useState({});
+    const [planetsDetails, setPlanetsDetails] = useState({});
     const [planetStorageReports, setPlanetStorageReports] = useState({});
 
+    // Parent Telemetry Pre-Loader
     useEffect(() => {
         const loadPlanetsAndPrices = async () => {
             if (user && token) {
@@ -420,10 +419,20 @@ const TestPage = () => {
                     const uniqueUnknownTypeIds = new Set();
                     const uniqueStoredItemIds = new Set();
                     
-                    const detailsPromises = data.map(p => fetchPlanetDetails(user.id, p.planet_id, token));
+                    const detailsPromises = data.map(async (p) => {
+                        const details = await fetchPlanetDetails(user.id, p.planet_id, token);
+                        return { planetId: p.planet_id, details };
+                    });
                     const detailsList = await Promise.all(detailsPromises);
                     
-                    detailsList.forEach(planetDetails => {
+                    const detailsMap = {};
+                    detailsList.forEach(item => {
+                        detailsMap[item.planetId] = item.details;
+                    });
+                    setPlanetsDetails(detailsMap);
+                    
+                    detailsList.forEach(item => {
+                        const planetDetails = item.details;
                         if (planetDetails && planetDetails.pins) {
                             planetDetails.pins.forEach(pin => {
                                 const struct = getStructureDataByTypeId(pin.type_id);
@@ -565,6 +574,7 @@ const TestPage = () => {
                                 planet={p} 
                                 token={token} 
                                 userId={user.id} 
+                                details={planetsDetails[p.planet_id]}
                                 prices={prices}
                                 onReportStorage={handleReportStorage}
                             />

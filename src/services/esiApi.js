@@ -84,18 +84,35 @@ export const fetchPlanetaryColonies = async (characterId, token) => {
 };
 
 export const fetchPlanetDetails = async (characterId, planetId, token) => {
-    try {
-        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
+    let retries = 3;
+    let delay = 300;
+    while (retries > 0) {
+        try {
+            const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.ok) {
+                return await response.json();
             }
-        });
-        if (!response.ok) throw new Error(`Failed to fetch planet details for ${planetId}`);
-        return await response.json();
-    } catch (error) {
-        console.error(error);
-        return null;
+            if (response.status === 420 || response.status >= 500) {
+                retries--;
+                if (retries === 0) return null;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            } else {
+                throw new Error(`ESI Error: ${response.status}`);
+            }
+        } catch (error) {
+            console.error(`ESI details fetch attempt failed for planet ${planetId}:`, error);
+            retries--;
+            if (retries === 0) return null;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2;
+        }
     }
+    return null;
 };
 
 export const fetchUniversePlanet = async (planetId) => {
