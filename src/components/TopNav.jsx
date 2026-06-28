@@ -80,7 +80,7 @@ const TopNav = () => {
                         <div className={`dropdown-content ${isPlannersOpen ? 'mobile-open' : ''}`}>
                             <NavLink to="/planner" onClick={closeMenu}>PI Planner</NavLink>
                             <NavLink to="/virtual-planet" onClick={closeMenu}>Virtual Planet</NavLink>
-                            <NavLink to="/production-vs" onClick={closeMenu}>Production Vs</NavLink>
+                            <NavLink to="/production-vs" onClick={closeMenu}>Production vs Refinement</NavLink>
                         </div>
                     </div>
                     <NavLink to="/command-center" className={({ isActive }) => `topnav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
