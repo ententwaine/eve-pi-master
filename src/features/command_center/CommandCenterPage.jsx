@@ -5,6 +5,14 @@ import { getStructureDataByTypeId } from '../../data/pi_structures';
 import { commodities } from '../../data/pi_data';
 import './CommandCenterPage.css';
 
+const VOLUMES = {
+    'P0': 0.01,
+    'P1': 0.38,
+    'P2': 1.5,
+    'P3': 6.0,
+    'P4': 100.0
+};
+
 const PlanetCard = ({ planet, token, userId }) => {
     const [details, setDetails] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -77,9 +85,18 @@ const PlanetCard = ({ planet, token, userId }) => {
         else if (struct.name === 'Launchpad') launchpads.push(pinData);
     });
 
-    const calculateCapacity = (pin, maxCap) => {
+    const getPinVolume = (pin) => {
         if (!pin.contents) return 0;
-        const totalVolume = pin.contents.reduce((sum, item) => sum + item.amount, 0);
+        return pin.contents.reduce((sum, item) => {
+            const comm = commodities.find(c => c.id === item.type_id);
+            const tier = comm ? comm.tier : 'P0';
+            const itemVolume = VOLUMES[tier] || 0.01;
+            return sum + (item.amount * itemVolume);
+        }, 0);
+    };
+
+    const calculateCapacity = (pin, maxCap) => {
+        const totalVolume = getPinVolume(pin);
         return Math.min(100, (totalVolume / maxCap) * 100);
     };
 
@@ -237,17 +254,17 @@ const PlanetCard = ({ planet, token, userId }) => {
                     <div className="lp-storage-bars">
                         {launchpads.map((lp, i) => {
                             const percent = calculateCapacity(lp, 10000);
-                            const totalVolume = lp.contents ? lp.contents.reduce((sum, item) => sum + item.amount, 0) : 0;
+                            const totalVolume = getPinVolume(lp);
                             return (
                                 <div key={lp.pin_id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', background: 'rgba(255,255,255,0.02)', padding: '6px var(--space-sm)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     {renderCircleIndicator(percent)}
                                     <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                                             <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Launchpad {i+1}</span>
-                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{(10000 - totalVolume).toLocaleString()} m³ free</span>
+                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{(10000 - totalVolume).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³ free</span>
                                         </div>
                                         <span className="text-muted" style={{ fontSize: '0.7rem', marginTop: '2px' }}>
-                                            Used: {totalVolume.toLocaleString()} / 10,000 m³
+                                            Used: {totalVolume.toLocaleString(undefined, { maximumFractionDigits: 1 })} / 10,000 m³
                                         </span>
                                         {lp.contents && lp.contents.length > 0 && (
                                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
@@ -267,17 +284,17 @@ const PlanetCard = ({ planet, token, userId }) => {
                         })}
                         {storage.map((st, i) => {
                             const percent = calculateCapacity(st, 12000);
-                            const totalVolume = st.contents ? st.contents.reduce((sum, item) => sum + item.amount, 0) : 0;
+                            const totalVolume = getPinVolume(st);
                             return (
                                 <div key={st.pin_id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', background: 'rgba(255,255,255,0.02)', padding: '6px var(--space-sm)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     {renderCircleIndicator(percent)}
                                     <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                                             <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Storage Facility {i+1}</span>
-                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{(12000 - totalVolume).toLocaleString()} m³ free</span>
+                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{(12000 - totalVolume).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³ free</span>
                                         </div>
                                         <span className="text-muted" style={{ fontSize: '0.7rem', marginTop: '2px' }}>
-                                            Used: {totalVolume.toLocaleString()} / 12,000 m³
+                                            Used: {totalVolume.toLocaleString(undefined, { maximumFractionDigits: 1 })} / 12,000 m³
                                         </span>
                                         {st.contents && st.contents.length > 0 && (
                                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
