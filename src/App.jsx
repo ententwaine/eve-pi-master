@@ -18,7 +18,7 @@ import CommodityDetailPage from './features/pi/CommodityDetailPage';
 import CallbackPage from './features/auth/CallbackPage';
 import VirtualPlanetPage from './features/virtual_planet/VirtualPlanetPage';
 import CommandCenterPage from './features/command_center/CommandCenterPage';
-import TestPage from './features/command_center/TestPage';
+import EyePage from './features/eye/EyePage';
 import ConsultantPage from './features/consultant/ConsultantPage';
 import AcademyPage from './features/academy/AcademyPage';
 import AllOrdersPage from './features/market/AllOrdersPage';
@@ -46,7 +46,7 @@ function App() {
                                     <Route path="/virtual-planet" element={<VirtualPlanetPage />} />
                                     <Route path="/production-vs" element={<ProductionVsPage />} />
                                     <Route path="/command-center" element={<CommandCenterPage />} />
-                                    <Route path="/test" element={<TestPage />} />
+                                    <Route path="/eye" element={<EyePage />} />
                                     <Route path="/consultant" element={<ConsultantPage />} />
                                     <Route path="/academy" element={<AcademyPage />} />
                                     <Route path="/planets" element={<PlanetsPage />} />
