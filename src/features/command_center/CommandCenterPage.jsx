@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchPlanetaryColonies, fetchPlanetDetails, fetchUniversePlanet, fetchUniverseSystem } from '../../services/esiApi';
 import { getStructureDataByTypeId } from '../../data/pi_structures';
+import { commodities } from '../../data/pi_data';
 import './CommandCenterPage.css';
 
 const PlanetCard = ({ planet, token, userId }) => {
@@ -76,13 +77,8 @@ const PlanetCard = ({ planet, token, userId }) => {
         else if (struct.name === 'Launchpad') launchpads.push(pinData);
     });
 
-    // Helper to calculate used capacity. In a real scenario we'd look at pin.contents
-    // For now, ESI provides `contents` array with type_id and amount
     const calculateCapacity = (pin, maxCap) => {
         if (!pin.contents) return 0;
-        // In EVE, items have volume. Without SDE, we can't perfectly calculate volume.
-        // We will just do a rough percentage based on amount vs maxCap for display purposes
-        // assuming average volume of 1m3 for simplicity in this demo
         const totalVolume = pin.contents.reduce((sum, item) => sum + item.amount, 0);
         return Math.min(100, (totalVolume / maxCap) * 100);
     };
@@ -94,6 +90,47 @@ const PlanetCard = ({ planet, token, userId }) => {
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         return `${hours}h ${minutes}m remaining`;
+    };
+
+    const renderCircleIndicator = (percent) => {
+        // Hue transitions from 120 (Green) at 0% to 0 (Red) at 100%
+        const strokeColor = `hsl(${120 * (1 - percent / 100)}, 85%, 45%)`;
+        return (
+            <svg viewBox="0 0 36 36" style={{ width: '48px', height: '48px', flexShrink: 0 }}>
+                <circle 
+                    cx="18" 
+                    cy="18" 
+                    r="15.9155" 
+                    fill="none" 
+                    stroke="rgba(255,255,255,0.06)" 
+                    strokeWidth="3.5" 
+                />
+                <circle 
+                    cx="18" 
+                    cy="18" 
+                    r="15.9155" 
+                    fill="none" 
+                    stroke={strokeColor} 
+                    strokeWidth="3.5" 
+                    strokeDasharray={`${percent} 100`} 
+                    strokeLinecap="round"
+                    transform="rotate(-90 18 18)"
+                    style={{ transition: 'stroke-dasharray 0.3s ease, stroke 0.3s ease' }}
+                />
+                <text 
+                    x="18" 
+                    y="20.5" 
+                    style={{ 
+                        fontSize: '8px', 
+                        fontWeight: 'bold', 
+                        fill: 'var(--color-text-main)', 
+                        textAnchor: 'middle' 
+                    }}
+                >
+                    {Math.round(percent)}%
+                </text>
+            </svg>
+        );
     };
 
     return (
@@ -143,42 +180,6 @@ const PlanetCard = ({ planet, token, userId }) => {
                 </div>
             </div>
 
-            {(storage.length > 0 || launchpads.length > 0) && (
-                <div className="lp-section">
-                    <div className="lp-section-title">Storage & Routing</div>
-                    <div className="lp-storage-bars">
-                        {launchpads.map((lp, i) => {
-                            const percent = calculateCapacity(lp, 10000);
-                            return (
-                                <div key={lp.pin_id} className="storage-bar-container">
-                                    <div className="storage-header">
-                                        <span>Launchpad {i+1}</span>
-                                        <span>{(100 - percent).toFixed(1)}% Remaining</span>
-                                    </div>
-                                    <div className="storage-track">
-                                        <div className={`storage-fill ${percent > 90 ? 'full' : ''}`} style={{ width: `${percent}%` }}></div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        {storage.map((st, i) => {
-                            const percent = calculateCapacity(st, 12000);
-                            return (
-                                <div key={st.pin_id} className="storage-bar-container">
-                                    <div className="storage-header">
-                                        <span>Storage Facility {i+1}</span>
-                                        <span>{(100 - percent).toFixed(1)}% Remaining</span>
-                                    </div>
-                                    <div className="storage-track">
-                                        <div className={`storage-fill ${percent > 90 ? 'full' : ''}`} style={{ width: `${percent}%` }}></div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
             {extractors.length > 0 && (
                 <div className="lp-section" style={{ marginTop: '8px' }}>
                     <div className="lp-section-title" style={{ marginBottom: '4px' }}>Extraction Status</div>
@@ -186,26 +187,115 @@ const PlanetCard = ({ planet, token, userId }) => {
                         const hasActiveExtractor = ecu.extractor_details && ecu.extractor_details.qty_per_cycle > 0;
                         const expiryTime = ecu.expiry_time ? new Date(ecu.expiry_time) : null;
                         const isExpired = expiryTime ? expiryTime < new Date() : true;
+                        
+                        const productTypeId = ecu.extractor_details?.product_type_id;
+                        const productItem = productTypeId ? commodities.find(c => c.id === productTypeId) : null;
 
                         return (
-                            <div key={ecu.pin_id} className="extractor-activity" style={{ marginTop: '4px', padding: '4px 8px' }}>
-                                {(!isExpired && hasActiveExtractor) ? (
+                            <div key={ecu.pin_id} className="extractor-activity" style={{ marginTop: '4px', padding: '6px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {(!isExpired && hasActiveExtractor && productItem) ? (
                                     <>
                                         <div className="extraction-indicator"></div>
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span className="text-success" style={{ fontSize: '0.85rem' }}>Active Extraction</span>
-                                            <span className="text-muted" style={{ fontSize: '0.75rem' }}>{getRemainingTime(expiryTime)}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexGrow: 1 }}>
+                                            <img 
+                                                src={`https://images.evetech.net/types/${productItem.id}/icon?size=32`} 
+                                                alt={productItem.name} 
+                                                style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }} 
+                                            />
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span className="text-success" style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                                    Extracting {productItem.name}
+                                                </span>
+                                                <span className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                                    {getRemainingTime(expiryTime)} ({ecu.extractor_details.qty_per_cycle.toLocaleString()} units/cycle)
+                                                </span>
+                                            </div>
                                         </div>
                                     </>
                                 ) : (
                                     <>
                                         <div className="extraction-indicator" style={{ background: 'var(--color-danger)', animation: 'none', boxShadow: 'none' }}></div>
-                                        <span className="text-danger" style={{ fontSize: '0.85rem' }}>Depleted / Idle</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span className="text-danger" style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Depleted / Idle</span>
+                                            {productItem && (
+                                                <span className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                                    Configured for: {productItem.name}
+                                                </span>
+                                            )}
+                                        </div>
                                     </>
                                 )}
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {(storage.length > 0 || launchpads.length > 0) && (
+                <div className="lp-section">
+                    <div className="lp-section-title">Storage & Routing Capacity</div>
+                    <div className="lp-storage-bars">
+                        {launchpads.map((lp, i) => {
+                            const percent = calculateCapacity(lp, 10000);
+                            const totalVolume = lp.contents ? lp.contents.reduce((sum, item) => sum + item.amount, 0) : 0;
+                            return (
+                                <div key={lp.pin_id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', background: 'rgba(255,255,255,0.02)', padding: '6px var(--space-sm)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    {renderCircleIndicator(percent)}
+                                    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                            <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Launchpad {i+1}</span>
+                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{(10000 - totalVolume).toLocaleString()} m³ free</span>
+                                        </div>
+                                        <span className="text-muted" style={{ fontSize: '0.7rem', marginTop: '2px' }}>
+                                            Used: {totalVolume.toLocaleString()} / 10,000 m³
+                                        </span>
+                                        {lp.contents && lp.contents.length > 0 && (
+                                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
+                                                {lp.contents.map(item => {
+                                                    const comm = commodities.find(c => c.id === item.type_id);
+                                                    return (
+                                                        <span key={item.type_id} className="text-muted" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                                            {comm ? comm.name : `Type ${item.type_id}`}: {item.amount.toLocaleString()}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {storage.map((st, i) => {
+                            const percent = calculateCapacity(st, 12000);
+                            const totalVolume = st.contents ? st.contents.reduce((sum, item) => sum + item.amount, 0) : 0;
+                            return (
+                                <div key={st.pin_id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', background: 'rgba(255,255,255,0.02)', padding: '6px var(--space-sm)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    {renderCircleIndicator(percent)}
+                                    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                            <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Storage Facility {i+1}</span>
+                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{(12000 - totalVolume).toLocaleString()} m³ free</span>
+                                        </div>
+                                        <span className="text-muted" style={{ fontSize: '0.7rem', marginTop: '2px' }}>
+                                            Used: {totalVolume.toLocaleString()} / 12,000 m³
+                                        </span>
+                                        {st.contents && st.contents.length > 0 && (
+                                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
+                                                {st.contents.map(item => {
+                                                    const comm = commodities.find(c => c.id === item.type_id);
+                                                    return (
+                                                        <span key={item.type_id} className="text-muted" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                                            {comm ? comm.name : `Type ${item.type_id}`}: {item.amount.toLocaleString()}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </div>
