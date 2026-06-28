@@ -80,22 +80,28 @@ const PlanetCard = ({ planet, token, userId }) => {
     let industry = [];
     let storage = [];
     let launchpads = [];
-
     pins.forEach(pin => {
         const struct = getStructureDataByTypeId(pin.type_id);
         const pinData = { ...pin, structName: struct.name, icon: struct.icon };
-        
-        if (struct.name === 'Command Center') {
+
+        const structNameLower = struct.name.toLowerCase();
+        if (structNameLower.includes('command center')) {
             pinData.icon = '/icons/icon1.jpg';
             commandCenter = pinData;
         }
-        else if (struct.name === 'Extractor Control Unit') {
+        else if (structNameLower.includes('extractor')) {
             pinData.icon = '/icons/icon2.jpg';
             extractors.push(pinData);
         }
-        else if (struct.name.includes('Industry')) industry.push(pinData);
-        else if (struct.name === 'Storage Facility') storage.push(pinData);
-        else if (struct.name === 'Launchpad') launchpads.push(pinData);
+        else if (structNameLower.includes('industry') || structNameLower.includes('processor')) {
+            industry.push(pinData);
+        }
+        else if (structNameLower.includes('storage')) {
+            storage.push(pinData);
+        }
+        else if (structNameLower.includes('launchpad') || structNameLower.includes('spaceport')) {
+            launchpads.push(pinData);
+        }
     });
 
     const getPinVolume = (pin) => {
