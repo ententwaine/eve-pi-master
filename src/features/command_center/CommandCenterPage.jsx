@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchPlanetaryColonies, fetchPlanetDetails, fetchUniversePlanet, fetchUniverseSystem, fetchUniverseType } from '../../services/esiApi';
+import { fetchPlanetaryColonies, fetchPlanetDetails, fetchUniversePlanet, fetchUniverseSystem, fetchUniverseType, getLowestSellOrder } from '../../services/esiApi';
 import { getStructureDataByTypeId, registerStructureType } from '../../data/pi_structures';
 import { commodities } from '../../data/pi_data';
 import './CommandCenterPage.css';
@@ -13,7 +13,7 @@ const VOLUMES = {
     'P4': 100.0
 };
 
-const PlanetCard = ({ planet, token, userId }) => {
+const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
     const [details, setDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [universePlanet, setUniversePlanet] = useState(null);
@@ -22,19 +22,6 @@ const PlanetCard = ({ planet, token, userId }) => {
     useEffect(() => {
         const loadDetails = async () => {
             const data = await fetchPlanetDetails(userId, planet.planet_id, token);
-            
-            if (data && data.pins) {
-                for (const pin of data.pins) {
-                    const struct = getStructureDataByTypeId(pin.type_id);
-                    if (struct.name.startsWith('Unknown Structure')) {
-                        const typeInfo = await fetchUniverseType(pin.type_id);
-                        if (typeInfo) {
-                            registerStructureType(pin.type_id, typeInfo);
-                        }
-                    }
-                }
-            }
-            
             setDetails(data);
             
             const uPlanet = await fetchUniversePlanet(planet.planet_id);
@@ -48,6 +35,37 @@ const PlanetCard = ({ planet, token, userId }) => {
         };
         loadDetails();
     }, [planet.planet_id, token, userId]);
+
+    // Report storage contents to parent
+    useEffect(() => {
+        if (!details || !onReportStorage) return;
+        
+        const pins = details.pins || [];
+        const report = [];
+        
+        pins.forEach(pin => {
+            const struct = getStructureDataByTypeId(pin.type_id);
+            const structNameLower = struct.name.toLowerCase();
+            if (structNameLower.includes('storage') || structNameLower.includes('launchpad') || structNameLower.includes('spaceport')) {
+                if (pin.contents) {
+                    pin.contents.forEach(item => {
+                        const comm = commodities.find(c => c.id === item.type_id);
+                        const itemPrice = prices[item.type_id] || 0;
+                        report.push({
+                            typeId: item.type_id,
+                            name: comm ? comm.name : `Item ${item.type_id}`,
+                            tier: comm ? comm.tier : 'P0',
+                            amount: item.amount,
+                            price: itemPrice,
+                            totalValue: item.amount * itemPrice
+                        });
+                    });
+                }
+            }
+        });
+        
+        onReportStorage(planet.planet_id, report);
+    }, [details, prices, onReportStorage, planet.planet_id]);
 
     if (loading) {
         return (
@@ -80,6 +98,7 @@ const PlanetCard = ({ planet, token, userId }) => {
     let industry = [];
     let storage = [];
     let launchpads = [];
+
     pins.forEach(pin => {
         const struct = getStructureDataByTypeId(pin.type_id);
         const pinData = { ...pin, structName: struct.name, icon: struct.icon };
@@ -129,7 +148,6 @@ const PlanetCard = ({ planet, token, userId }) => {
     };
 
     const renderCircleIndicator = (percent) => {
-        // Hue transitions from 120 (Green) at 0% to 0 (Red) at 100%
         const strokeColor = `hsl(${120 * (1 - percent / 100)}, 85%, 45%)`;
         return (
             <svg viewBox="0 0 36 36" style={{ width: '48px', height: '48px', flexShrink: 0 }}>
@@ -274,24 +292,30 @@ const PlanetCard = ({ planet, token, userId }) => {
                         {launchpads.map((lp, i) => {
                             const percent = calculateCapacity(lp, 10000);
                             const totalVolume = getPinVolume(lp);
+                            const facilityValue = lp.contents ? lp.contents.reduce((sum, item) => sum + (item.amount * (prices[item.type_id] || 0)), 0) : 0;
                             return (
                                 <div key={lp.pin_id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', background: 'rgba(255,255,255,0.02)', padding: '6px var(--space-sm)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     {renderCircleIndicator(percent)}
                                     <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                                             <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Launchpad {i+1}</span>
-                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{(10000 - totalVolume).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³ free</span>
+                                            <span className="text-primary" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                                {facilityValue > 0 ? new Intl.NumberFormat('en-US').format(Math.round(facilityValue)) + ' ISK' : '0 ISK'}
+                                            </span>
                                         </div>
-                                        <span className="text-muted" style={{ fontSize: '0.7rem', marginTop: '2px' }}>
-                                            Used: {totalVolume.toLocaleString(undefined, { maximumFractionDigits: 1 })} / 10,000 m³
-                                        </span>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                            <span>Used: {totalVolume.toLocaleString(undefined, { maximumFractionDigits: 1 })} / 10,000 m³</span>
+                                            <span>{(10000 - totalVolume).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³ free</span>
+                                        </div>
                                         {lp.contents && lp.contents.length > 0 && (
                                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
                                                 {lp.contents.map(item => {
                                                     const comm = commodities.find(c => c.id === item.type_id);
+                                                    const price = prices[item.type_id] || 0;
+                                                    const itemValue = item.amount * price;
                                                     return (
-                                                        <span key={item.type_id} className="text-muted" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                                                            {comm ? comm.name : `Type ${item.type_id}`}: {item.amount.toLocaleString()}
+                                                        <span key={item.type_id} className="text-muted" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.03)' }} title={`Jita Sell: ${price.toLocaleString()} ISK`}>
+                                                            {comm ? comm.name : `Type ${item.type_id}`}: {item.amount.toLocaleString()} ({itemValue > 0 ? new Intl.NumberFormat('en-US').format(Math.round(itemValue)) + ' ISK' : '0 ISK'})
                                                         </span>
                                                     );
                                                 })}
@@ -304,24 +328,30 @@ const PlanetCard = ({ planet, token, userId }) => {
                         {storage.map((st, i) => {
                             const percent = calculateCapacity(st, 12000);
                             const totalVolume = getPinVolume(st);
+                            const facilityValue = st.contents ? st.contents.reduce((sum, item) => sum + (item.amount * (prices[item.type_id] || 0)), 0) : 0;
                             return (
                                 <div key={st.pin_id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', background: 'rgba(255,255,255,0.02)', padding: '6px var(--space-sm)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     {renderCircleIndicator(percent)}
                                     <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                                             <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Storage Facility {i+1}</span>
-                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{(12000 - totalVolume).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³ free</span>
+                                            <span className="text-primary" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                                {facilityValue > 0 ? new Intl.NumberFormat('en-US').format(Math.round(facilityValue)) + ' ISK' : '0 ISK'}
+                                            </span>
                                         </div>
-                                        <span className="text-muted" style={{ fontSize: '0.7rem', marginTop: '2px' }}>
-                                            Used: {totalVolume.toLocaleString(undefined, { maximumFractionDigits: 1 })} / 12,000 m³
-                                        </span>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                            <span>Used: {totalVolume.toLocaleString(undefined, { maximumFractionDigits: 1 })} / 12,000 m³</span>
+                                            <span>{(12000 - totalVolume).toLocaleString(undefined, { maximumFractionDigits: 1 })} m³ free</span>
+                                        </div>
                                         {st.contents && st.contents.length > 0 && (
                                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
                                                 {st.contents.map(item => {
                                                     const comm = commodities.find(c => c.id === item.type_id);
+                                                    const price = prices[item.type_id] || 0;
+                                                    const itemValue = item.amount * price;
                                                     return (
-                                                        <span key={item.type_id} className="text-muted" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                                                            {comm ? comm.name : `Type ${item.type_id}`}: {item.amount.toLocaleString()}
+                                                        <span key={item.type_id} className="text-muted" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.03)' }} title={`Jita Sell: ${price.toLocaleString()} ISK`}>
+                                                            {comm ? comm.name : `Type ${item.type_id}`}: {item.amount.toLocaleString()} ({itemValue > 0 ? new Intl.NumberFormat('en-US').format(Math.round(itemValue)) + ' ISK' : '0 ISK'})
                                                         </span>
                                                     );
                                                 })}
@@ -342,17 +372,102 @@ const CommandCenterPage = () => {
     const { user, token } = useAuth();
     const [planets, setPlanets] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [prices, setPrices] = useState({});
+    const [planetStorageReports, setPlanetStorageReports] = useState({});
 
     useEffect(() => {
-        const loadPlanets = async () => {
+        const loadPlanetsAndPrices = async () => {
             if (user && token) {
                 const data = await fetchPlanetaryColonies(user.id, token);
                 setPlanets(data || []);
+                
+                if (data && data.length > 0) {
+                    const uniqueUnknownTypeIds = new Set();
+                    const uniqueStoredItemIds = new Set();
+                    
+                    // Fetch details for all planets in parallel
+                    const detailsPromises = data.map(p => fetchPlanetDetails(user.id, p.planet_id, token));
+                    const detailsList = await Promise.all(detailsPromises);
+                    
+                    detailsList.forEach(planetDetails => {
+                        if (planetDetails && planetDetails.pins) {
+                            planetDetails.pins.forEach(pin => {
+                                const struct = getStructureDataByTypeId(pin.type_id);
+                                if (struct.name.startsWith('Unknown Structure')) {
+                                    uniqueUnknownTypeIds.add(pin.type_id);
+                                }
+                                const structNameLower = struct.name.toLowerCase();
+                                if (structNameLower.includes('storage') || structNameLower.includes('launchpad') || structNameLower.includes('spaceport')) {
+                                    if (pin.contents) {
+                                        pin.contents.forEach(item => uniqueStoredItemIds.add(item.type_id));
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Resolve unknown type IDs in parallel
+                    if (uniqueUnknownTypeIds.size > 0) {
+                        const typePromises = Array.from(uniqueUnknownTypeIds).map(async (typeId) => {
+                            const typeInfo = await fetchUniverseType(typeId);
+                            if (typeInfo) {
+                                registerStructureType(typeId, typeInfo);
+                            }
+                        });
+                        await Promise.all(typePromises);
+                    }
+                    
+                    // Fetch lowest Jita sell orders for all stored items in parallel
+                    const JITA_REGION_ID = 10000002;
+                    const JITA_SYSTEM_ID = 30000144;
+                    const fetchedPrices = {};
+                    if (uniqueStoredItemIds.size > 0) {
+                        const pricePromises = Array.from(uniqueStoredItemIds).map(async (itemId) => {
+                            try {
+                                const price = await getLowestSellOrder(JITA_REGION_ID, itemId, JITA_SYSTEM_ID);
+                                fetchedPrices[itemId] = price || 0;
+                            } catch (e) {
+                                fetchedPrices[itemId] = 0;
+                            }
+                        });
+                        await Promise.all(pricePromises);
+                    }
+                    setPrices(fetchedPrices);
+                }
             }
             setLoading(false);
         };
-        loadPlanets();
+        loadPlanetsAndPrices();
     }, [user, token]);
+
+    const handleReportStorage = React.useCallback((planetId, report) => {
+        setPlanetStorageReports(prev => {
+            if (JSON.stringify(prev[planetId]) === JSON.stringify(report)) return prev;
+            return { ...prev, [planetId]: report };
+        });
+    }, []);
+
+    const { totalsByTier, grandTotal } = React.useMemo(() => {
+        const totals = { P4: 0, P3: 0, P2: 0, P1: 0, P0: 0 };
+        let grand = 0;
+        
+        Object.values(planetStorageReports).forEach(report => {
+            if (report) {
+                report.forEach(item => {
+                    if (totals[item.tier] !== undefined) {
+                        totals[item.tier] += item.totalValue;
+                    }
+                    grand += item.totalValue;
+                });
+            }
+        });
+        
+        return { totalsByTier: totals, grandTotal: grand };
+    }, [planetStorageReports]);
+
+    const formatSummaryISK = (val) => {
+        return new Intl.NumberFormat('en-US', { style: 'decimal', maximumFractionDigits: 0 }).format(val) + ' ISK';
+    };
 
     if (!user) {
         return (
@@ -401,11 +516,51 @@ const CommandCenterPage = () => {
                     <p>Build command centers in-game to see them here.</p>
                 </div>
             ) : (
-                <div className="live-planets-grid">
-                    {planets.map(p => (
-                        <PlanetCard key={p.planet_id} planet={p} token={token} userId={user.id} />
-                    ))}
-                </div>
+                <>
+                    <div className="live-planets-grid">
+                        {planets.map(p => (
+                            <PlanetCard 
+                                key={p.planet_id} 
+                                planet={p} 
+                                token={token} 
+                                userId={user.id} 
+                                prices={prices}
+                                onReportStorage={handleReportStorage}
+                            />
+                        ))}
+                    </div>
+
+                    {grandTotal > 0 && (
+                        <div className="glass-panel" style={{ padding: 'var(--space-lg)', borderRadius: 'var(--radius-lg)', marginTop: 'var(--space-lg)' }}>
+                            <h2 className="text-primary" style={{ marginTop: 0, marginBottom: 'var(--space-md)' }}>Stored Commodities Valuation</h2>
+                            <p className="text-muted" style={{ marginBottom: 'var(--space-md)' }}>
+                                Aggregated ISK valuation of all commodities stored in launchpads and storage facilities across your colonies, based on Jita lowest sell orders.
+                            </p>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-md)', marginBottom: 'var(--space-lg)' }}>
+                                {['P4', 'P3', 'P2', 'P1', 'P0'].map(tier => {
+                                    const val = totalsByTier[tier];
+                                    if (val === 0) return null;
+                                    return (
+                                        <div key={tier} className="glass-panel" style={{ padding: 'var(--space-md)', borderRadius: 'var(--radius-md)', borderLeft: `3px solid var(--color-tier-${tier.toLowerCase()})`, background: 'rgba(20,22,30,0.6)' }}>
+                                            <div style={{ color: `var(--color-tier-${tier.toLowerCase()})`, fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                                                {tier} Stored Value
+                                            </div>
+                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginTop: '4px', fontFamily: 'monospace' }}>
+                                                {formatSummaryISK(val)}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-md)' }}>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Grand Total Valuation (Jita Sell):</span>
+                                <span style={{ fontSize: '1.6rem', fontWeight: 'bold', color: 'var(--color-primary)', fontFamily: 'monospace' }}>
+                                    {formatSummaryISK(grandTotal)}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
