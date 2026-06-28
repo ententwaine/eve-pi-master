@@ -55,9 +55,12 @@ export const fetchMarketHistory = async (regionId, typeId) => {
 
 export const fetchCharacterSkills = async (characterId, token) => {
     try {
-        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility`, {
+        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility&_cb=${Date.now()}`, {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             }
         });
         if (!response.ok) throw new Error('Failed to fetch skills');
@@ -70,9 +73,12 @@ export const fetchCharacterSkills = async (characterId, token) => {
 
 export const fetchPlanetaryColonies = async (characterId, token) => {
     try {
-        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility`, {
+        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility&_cb=${Date.now()}`, {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             }
         });
         if (!response.ok) throw new Error('Failed to fetch planets');
@@ -88,9 +94,12 @@ export const fetchPlanetDetails = async (characterId, planetId, token) => {
     let delay = 300;
     while (retries > 0) {
         try {
-            const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
+            const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility&_cb=${Date.now()}`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
                 }
             });
             if (response.ok) {
