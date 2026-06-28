@@ -13,6 +13,15 @@ const VOLUMES = {
     'P4': 100.0
 };
 
+// Fallback pricing for untradeable/raw commodities (e.g. P0 materials which cannot be listed on Jita sell orders)
+const FALLBACK_PRICES = {
+    'P0': 8.0,       // ~8 ISK per unit
+    'P1': 450.0,     // ~450 ISK per unit
+    'P2': 9000.0,    // ~9,000 ISK per unit
+    'P3': 60000.0,   // ~60,000 ISK per unit
+    'P4': 1200000.0  // ~1.2M ISK per unit
+};
+
 const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
     const [details, setDetails] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -46,15 +55,25 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
         pins.forEach(pin => {
             const struct = getStructureDataByTypeId(pin.type_id);
             const structNameLower = struct.name.toLowerCase();
-            if (structNameLower.includes('storage') || structNameLower.includes('launchpad') || structNameLower.includes('spaceport')) {
+            
+            const isCommandCenter = structNameLower.includes('command center') || 
+                                    [2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(Number(pin.type_id));
+            const isExtractor = structNameLower.includes('extractor') || 
+                                pin.extractor_details !== undefined;
+            const isIndustry = structNameLower.includes('industry') || 
+                               structNameLower.includes('processor') || 
+                               pin.factory_details !== undefined;
+            
+            if (!isCommandCenter && !isExtractor && !isIndustry) {
                 if (pin.contents) {
                     pin.contents.forEach(item => {
                         const comm = commodities.find(c => c.id === item.type_id);
-                        const itemPrice = prices[item.type_id] || 0;
+                        const tier = comm ? comm.tier : 'P0';
+                        const itemPrice = prices[item.type_id] || FALLBACK_PRICES[tier];
                         report.push({
                             typeId: item.type_id,
                             name: comm ? comm.name : `Item ${item.type_id}`,
-                            tier: comm ? comm.tier : 'P0',
+                            tier: tier,
                             amount: item.amount,
                             price: itemPrice,
                             totalValue: item.amount * itemPrice
@@ -104,22 +123,34 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
         const pinData = { ...pin, structName: struct.name, icon: struct.icon };
 
         const structNameLower = struct.name.toLowerCase();
-        if (structNameLower.includes('command center')) {
+        const isCommandCenter = structNameLower.includes('command center') || 
+                                [2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(Number(pin.type_id));
+        const isExtractor = structNameLower.includes('extractor') || 
+                            pin.extractor_details !== undefined;
+        const isIndustry = structNameLower.includes('industry') || 
+                           structNameLower.includes('processor') || 
+                           pin.factory_details !== undefined;
+
+        if (isCommandCenter) {
             pinData.icon = '/icons/icon1.jpg';
             commandCenter = pinData;
         }
-        else if (structNameLower.includes('extractor')) {
+        else if (isExtractor) {
             pinData.icon = '/icons/icon2.jpg';
             extractors.push(pinData);
         }
-        else if (structNameLower.includes('industry') || structNameLower.includes('processor')) {
+        else if (isIndustry) {
             industry.push(pinData);
         }
-        else if (structNameLower.includes('storage')) {
-            storage.push(pinData);
-        }
-        else if (structNameLower.includes('launchpad') || structNameLower.includes('spaceport')) {
-            launchpads.push(pinData);
+        else {
+            // REDUNDANT STORAGE CLASSIFICATION: If it is not CC, Extractor, or Industry, it is storage/routing capacity
+            const isKnownStorage = structNameLower.includes('storage') || 
+                                   [2257, 2535, 2536, 2538, 2541, 2558, 2573, 2583, 2586, 2588, 3066].includes(Number(pin.type_id));
+            if (isKnownStorage) {
+                storage.push(pinData);
+            } else {
+                launchpads.push(pinData);
+            }
         }
     });
 
@@ -292,7 +323,11 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
                         {launchpads.map((lp, i) => {
                             const percent = calculateCapacity(lp, 10000);
                             const totalVolume = getPinVolume(lp);
-                            const facilityValue = lp.contents ? lp.contents.reduce((sum, item) => sum + (item.amount * (prices[item.type_id] || 0)), 0) : 0;
+                            const facilityValue = lp.contents ? lp.contents.reduce((sum, item) => {
+                                const comm = commodities.find(c => c.id === item.type_id);
+                                const price = prices[item.type_id] || FALLBACK_PRICES[comm?.tier || 'P0'];
+                                return sum + (item.amount * price);
+                            }, 0) : 0;
                             return (
                                 <div key={lp.pin_id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', background: 'rgba(255,255,255,0.02)', padding: '6px var(--space-sm)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     {renderCircleIndicator(percent)}
@@ -311,7 +346,7 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
                                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
                                                 {lp.contents.map(item => {
                                                     const comm = commodities.find(c => c.id === item.type_id);
-                                                    const price = prices[item.type_id] || 0;
+                                                    const price = prices[item.type_id] || FALLBACK_PRICES[comm?.tier || 'P0'];
                                                     const itemValue = item.amount * price;
                                                     return (
                                                         <span key={item.type_id} className="text-muted" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.03)' }} title={`Jita Sell: ${price.toLocaleString()} ISK`}>
@@ -328,7 +363,11 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
                         {storage.map((st, i) => {
                             const percent = calculateCapacity(st, 12000);
                             const totalVolume = getPinVolume(st);
-                            const facilityValue = st.contents ? st.contents.reduce((sum, item) => sum + (item.amount * (prices[item.type_id] || 0)), 0) : 0;
+                            const facilityValue = st.contents ? st.contents.reduce((sum, item) => {
+                                const comm = commodities.find(c => c.id === item.type_id);
+                                const price = prices[item.type_id] || FALLBACK_PRICES[comm?.tier || 'P0'];
+                                return sum + (item.amount * price);
+                            }, 0) : 0;
                             return (
                                 <div key={st.pin_id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', background: 'rgba(255,255,255,0.02)', padding: '6px var(--space-sm)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     {renderCircleIndicator(percent)}
@@ -347,7 +386,7 @@ const PlanetCard = ({ planet, token, userId, prices, onReportStorage }) => {
                                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
                                                 {st.contents.map(item => {
                                                     const comm = commodities.find(c => c.id === item.type_id);
-                                                    const price = prices[item.type_id] || 0;
+                                                    const price = prices[item.type_id] || FALLBACK_PRICES[comm?.tier || 'P0'];
                                                     const itemValue = item.amount * price;
                                                     return (
                                                         <span key={item.type_id} className="text-muted" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.03)' }} title={`Jita Sell: ${price.toLocaleString()} ISK`}>
@@ -396,8 +435,17 @@ const CommandCenterPage = () => {
                                 if (struct.name.startsWith('Unknown Structure')) {
                                     uniqueUnknownTypeIds.add(pin.type_id);
                                 }
+                                
                                 const structNameLower = struct.name.toLowerCase();
-                                if (structNameLower.includes('storage') || structNameLower.includes('launchpad') || structNameLower.includes('spaceport')) {
+                                const isCommandCenter = structNameLower.includes('command center') || 
+                                                        [2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(Number(pin.type_id));
+                                const isExtractor = structNameLower.includes('extractor') || 
+                                                    pin.extractor_details !== undefined;
+                                const isIndustry = structNameLower.includes('industry') || 
+                                                   structNameLower.includes('processor') || 
+                                                   pin.factory_details !== undefined;
+                                                   
+                                if (!isCommandCenter && !isExtractor && !isIndustry) {
                                     if (pin.contents) {
                                         pin.contents.forEach(item => uniqueStoredItemIds.add(item.type_id));
                                     }
