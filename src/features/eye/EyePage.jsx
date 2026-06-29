@@ -440,7 +440,7 @@ const EyePlanetCard = ({ planet, details, prices }) => {
 };
 
 const EyePage = () => {
-    const { user, token, login } = useAuth();
+    const { user, token, login, characters, switchCharacter } = useAuth();
     const [planets, setPlanets] = useState([]);
     const [planetsDetails, setPlanetsDetails] = useState({});
     const [prices, setPrices] = useState({});
@@ -679,10 +679,37 @@ const EyePage = () => {
                 <div className="eye-hud-header-left">
                     <div className={isRefetching ? "eye-glowing-indicator refetching" : "eye-glowing-indicator"}></div>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
                             <h1 className="eye-neon-title" style={{ margin: 0 }}>
                                 {isRefetching ? "PI EYE • RECOVERY SYNC..." : "PI EYE • OVERSEE PANEL"}
                             </h1>
+                            
+                            {/* Character Switcher Selector */}
+                            {characters.length > 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', background: 'rgba(0, 0, 0, 0.4)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>👤</span>
+                                    <select
+                                        value={user.id}
+                                        onChange={(e) => switchCharacter(e.target.value)}
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'var(--color-primary)',
+                                            fontSize: '0.75rem',
+                                            outline: 'none',
+                                            cursor: 'pointer',
+                                            fontWeight: 'bold'
+                                        }}
+                                    >
+                                        {characters.map(char => (
+                                            <option key={char.id} value={char.id} style={{ background: '#111', color: '#fff' }}>
+                                                {char.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <button 
                                 className="eye-hud-btn glow-cyan" 
                                 style={{ padding: '4px 10px', fontSize: '0.75rem', height: '24px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
@@ -691,8 +718,16 @@ const EyePage = () => {
                             >
                                 <span>🔄</span> {isRefetching ? "SYNCING..." : "FORCE SYNC"}
                             </button>
+
+                            <button 
+                                className="eye-hud-btn glow-cyan" 
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', height: '24px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', borderColor: 'var(--color-accent)' }}
+                                onClick={login}
+                            >
+                                <span>➕</span> ADD CHARACTER
+                            </button>
                         </div>
-                        <p className="text-muted" style={{ marginTop: '4px' }}>
+                        <p className="text-muted" style={{ marginTop: '8px' }}>
                             {isRefetching 
                                 ? "Bypassing intermediate CDN cache filters and force-syncing fresh Tranquility state..." 
                                 : `Real-time status monitoring, warning scans, and stored asset valuations for ${user.name}.`}

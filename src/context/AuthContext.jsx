@@ -1,11 +1,12 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext();
 
 // Using environment variables for Client ID
 const CLIENT_ID = import.meta.env.VITE_EVE_CLIENT_ID || 'YOUR_CLIENT_ID_HERE';
 const CALLBACK_URL = `${window.location.origin}/callback`;
-const SCOPES = 'esi-planets.manage_planets.v1 esi-skills.read_skills.v1';
+// offline_access is mandatory to receive refresh_token for background session renewal
+const SCOPES = 'esi-planets.manage_planets.v1 esi-skills.read_skills.v1 offline_access';
 
 // PKCE Helper Functions
 const generateRandomString = (length) => {
@@ -27,25 +28,135 @@ const generateCodeChallenge = async (codeVerifier) => {
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
+    const [characters, setCharacters] = useState([]);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-    useEffect(() => {
-        // Check for existing session on mount
-        const storedToken = localStorage.getItem('eve_access_token');
-        const storedUser = localStorage.getItem('eve_user');
-        const expiresAt = localStorage.getItem('eve_token_expires');
+    // Refresh token helper using public client grant type
+    const refreshCharacterToken = useCallback(async (char) => {
+        try {
+            const response = await fetch('https://login.eveonline.com/v2/oauth/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    grant_type: 'refresh_token',
+                    client_id: CLIENT_ID,
+                    refresh_token: char.refreshToken
+                })
+            });
 
-        if (storedToken && storedUser && expiresAt) {
-            if (Date.now() < parseInt(expiresAt, 10)) {
-                setToken(storedToken);
-                setUser(JSON.parse(storedUser));
-            } else {
-                // Token expired
-                logout();
+            if (!response.ok) {
+                throw new Error(`SSO refresh failed: ${response.status}`);
             }
+
+            const tokenData = await response.json();
+            return {
+                ...char,
+                token: tokenData.access_token,
+                refreshToken: tokenData.refresh_token || char.refreshToken,
+                expiresAt: Date.now() + (tokenData.expires_in * 1000)
+            };
+        } catch (error) {
+            console.error(`Failed to refresh token for character ${char.name}:`, error);
+            return null;
         }
-        setIsCheckingAuth(false);
     }, []);
+
+    // Initial mount initialization
+    useEffect(() => {
+        const initializeAuth = async () => {
+            const storedCharsStr = localStorage.getItem('eve_linked_characters');
+            const activeCharId = localStorage.getItem('eve_active_character_id');
+            
+            if (!storedCharsStr) {
+                setIsCheckingAuth(false);
+                return;
+            }
+
+            try {
+                const storedChars = JSON.parse(storedCharsStr);
+                const updatedChars = [];
+                
+                for (const char of storedChars) {
+                    // Check if token expires within 2 minutes
+                    if (Date.now() >= char.expiresAt - 120000) {
+                        const refreshed = await refreshCharacterToken(char);
+                        if (refreshed) {
+                            updatedChars.push(refreshed);
+                        }
+                    } else {
+                        updatedChars.push(char);
+                    }
+                }
+
+                localStorage.setItem('eve_linked_characters', JSON.stringify(updatedChars));
+                setCharacters(updatedChars);
+
+                if (updatedChars.length > 0) {
+                    const activeChar = updatedChars.find(c => c.id === activeCharId) || updatedChars[0];
+                    localStorage.setItem('eve_active_character_id', activeChar.id);
+                    setUser({ id: activeChar.id, name: activeChar.name });
+                    setToken(activeChar.token);
+                } else {
+                    localStorage.removeItem('eve_active_character_id');
+                    setUser(null);
+                    setToken(null);
+                }
+            } catch (e) {
+                console.error("Error initializing linked characters:", e);
+            }
+            setIsCheckingAuth(false);
+        };
+
+        initializeAuth();
+    }, [refreshCharacterToken]);
+
+    // Background session renewal task (runs every 60 seconds)
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            if (characters.length === 0) return;
+            let changed = false;
+            const updatedChars = [];
+
+            for (const char of characters) {
+                if (Date.now() >= char.expiresAt - 120000) {
+                    const refreshed = await refreshCharacterToken(char);
+                    if (refreshed) {
+                        updatedChars.push(refreshed);
+                        changed = true;
+                    } else {
+                        changed = true; // Remove the failed character
+                    }
+                } else {
+                    updatedChars.push(char);
+                }
+            }
+
+            if (changed) {
+                localStorage.setItem('eve_linked_characters', JSON.stringify(updatedChars));
+                setCharacters(updatedChars);
+                
+                const activeCharId = localStorage.getItem('eve_active_character_id');
+                const activeChar = updatedChars.find(c => c.id === activeCharId);
+                
+                if (activeChar) {
+                    setUser({ id: activeChar.id, name: activeChar.name });
+                    setToken(activeChar.token);
+                } else if (updatedChars.length > 0) {
+                    localStorage.setItem('eve_active_character_id', updatedChars[0].id);
+                    setUser({ id: updatedChars[0].id, name: updatedChars[0].name });
+                    setToken(updatedChars[0].token);
+                } else {
+                    localStorage.removeItem('eve_active_character_id');
+                    setUser(null);
+                    setToken(null);
+                }
+            }
+        }, 60000);
+
+        return () => clearInterval(interval);
+    }, [characters, refreshCharacterToken]);
 
     const login = async () => {
         if (CLIENT_ID === 'YOUR_CLIENT_ID_HERE') {
@@ -56,7 +167,6 @@ export const AuthProvider = ({ children }) => {
         const codeVerifier = generateRandomString(64);
         localStorage.setItem('eve_code_verifier', codeVerifier);
         
-        // Generate state to prevent CSRF
         const state = generateRandomString(16);
         localStorage.setItem('eve_auth_state', state);
 
@@ -70,6 +180,8 @@ export const AuthProvider = ({ children }) => {
         authUrl.searchParams.append('code_challenge', codeChallenge);
         authUrl.searchParams.append('code_challenge_method', 'S256');
         authUrl.searchParams.append('state', state);
+        // prompt=select_account forces EVE SSO to ask which account/character to authorize
+        authUrl.searchParams.append('prompt', 'select_account');
 
         window.location.href = authUrl.toString();
     };
@@ -85,7 +197,6 @@ export const AuthProvider = ({ children }) => {
             throw new Error("Code verifier missing. Please try logging in again.");
         }
 
-        // Exchange code for token
         const tokenResponse = await fetch('https://login.eveonline.com/v2/oauth/token', {
             method: 'POST',
             headers: {
@@ -106,16 +217,11 @@ export const AuthProvider = ({ children }) => {
 
         const tokenData = await tokenResponse.json();
         const accessToken = tokenData.access_token;
-        
-        // Calculate expiration (current time + expires_in seconds)
+        const refreshToken = tokenData.refresh_token;
         const expiresAt = Date.now() + (tokenData.expires_in * 1000);
 
-        // Fetch character details using the verify endpoint (or jwt decode)
-        // EVE's JWT contains character ID in the 'sub' field: "CHARACTER:EVE:123456789"
-        // But verifying via endpoint is cleaner if available, though /verify is deprecated for JWT.
-        // We can just parse the JWT directly.
-        const parseJwt = (token) => {
-            const base64Url = token.split('.')[1];
+        const parseJwt = (t) => {
+            const base64Url = t.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
             const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
@@ -127,34 +233,87 @@ export const AuthProvider = ({ children }) => {
         const characterId = decoded.sub.split(':')[2];
         const characterName = decoded.name;
 
-        const userData = {
+        const newChar = {
             id: characterId,
-            name: characterName
+            name: characterName,
+            token: accessToken,
+            refreshToken: refreshToken,
+            expiresAt: expiresAt
         };
 
-        // Save session
-        localStorage.setItem('eve_access_token', accessToken);
-        localStorage.setItem('eve_user', JSON.stringify(userData));
-        localStorage.setItem('eve_token_expires', expiresAt.toString());
-        
-        // Cleanup PKCE items
+        const storedCharsStr = localStorage.getItem('eve_linked_characters');
+        let linkedChars = [];
+        if (storedCharsStr) {
+            try {
+                linkedChars = JSON.parse(storedCharsStr);
+            } catch (e) {
+                linkedChars = [];
+            }
+        }
+
+        linkedChars = linkedChars.filter(c => c.id !== characterId);
+        linkedChars.push(newChar);
+
+        localStorage.setItem('eve_linked_characters', JSON.stringify(linkedChars));
+        localStorage.setItem('eve_active_character_id', characterId);
+
         localStorage.removeItem('eve_code_verifier');
         localStorage.removeItem('eve_auth_state');
 
+        setCharacters(linkedChars);
+        setUser({ id: characterId, name: characterName });
         setToken(accessToken);
-        setUser(userData);
+    };
+
+    const switchCharacter = (characterId) => {
+        const char = characters.find(c => c.id === characterId);
+        if (char) {
+            localStorage.setItem('eve_active_character_id', characterId);
+            setUser({ id: char.id, name: char.name });
+            setToken(char.token);
+        }
     };
 
     const logout = () => {
-        localStorage.removeItem('eve_access_token');
-        localStorage.removeItem('eve_user');
-        localStorage.removeItem('eve_token_expires');
-        setToken(null);
+        if (!user) return;
+        const activeId = user.id;
+        const remainingChars = characters.filter(c => c.id !== activeId);
+        
+        localStorage.setItem('eve_linked_characters', JSON.stringify(remainingChars));
+        setCharacters(remainingChars);
+
+        if (remainingChars.length > 0) {
+            localStorage.setItem('eve_active_character_id', remainingChars[0].id);
+            setUser({ id: remainingChars[0].id, name: remainingChars[0].name });
+            setToken(remainingChars[0].token);
+        } else {
+            localStorage.removeItem('eve_active_character_id');
+            localStorage.removeItem('eve_linked_characters');
+            setUser(null);
+            setToken(null);
+        }
+    };
+
+    const logoutAll = () => {
+        localStorage.removeItem('eve_active_character_id');
+        localStorage.removeItem('eve_linked_characters');
+        setCharacters([]);
         setUser(null);
+        setToken(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, isCheckingAuth, login, logout, handleCallback }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            token, 
+            characters, 
+            isCheckingAuth, 
+            login, 
+            logout, 
+            logoutAll, 
+            switchCharacter, 
+            handleCallback 
+        }}>
             {children}
         </AuthContext.Provider>
     );
