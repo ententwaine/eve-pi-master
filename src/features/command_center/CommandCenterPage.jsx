@@ -414,6 +414,12 @@ const CommandCenterPage = () => {
 
     // Parent Telemetry Pre-Loader
     useEffect(() => {
+        setLoading(true);
+        setPlanets([]);
+        setPlanetsDetails({});
+        setPlanetStorageReports({});
+        setPrices({});
+
         const loadPlanetsAndPrices = async () => {
             if (user && token) {
                 const data = await fetchPlanetaryColonies(user.id, token);

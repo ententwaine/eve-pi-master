@@ -452,6 +452,11 @@ const EyePage = () => {
         if (!user || !token) return;
         if (isForced) {
             setIsRefetching(true);
+        } else {
+            setLoading(true);
+            setPlanets([]);
+            setPlanetsDetails({});
+            setPrices({});
         }
 
         try {
@@ -496,23 +501,26 @@ const EyePage = () => {
                 });
 
                 // REDUNDANCY STALE DATA CHECK:
-                // Compare current payload string representation with the last localStorage state
+                // Compare current payload string representation with the last character-specific localStorage state
                 const currentDataString = JSON.stringify(detailsMap);
-                const lastDataString = localStorage.getItem('last_eye_telemetry_data');
-                const lastFetchTime = localStorage.getItem('last_eye_telemetry_time');
+                const lastDataKey = `last_eye_telemetry_data_${user.id}`;
+                const lastTimeKey = `last_eye_telemetry_time_${user.id}`;
+
+                const lastDataString = localStorage.getItem(lastDataKey);
+                const lastFetchTime = localStorage.getItem(lastTimeKey);
                 const timeSinceLastFetch = Date.now() - Number(lastFetchTime || 0);
 
                 if (!isForced && lastDataString && currentDataString === lastDataString && timeSinceLastFetch > 5000) {
-                    console.warn("Redundancy check failed: Stale telemetry data suspected. Triggering forced Tranquility refresh...");
-                    localStorage.setItem('last_eye_telemetry_time', Date.now().toString());
+                    console.warn(`Redundancy check failed for character ${user.id}: Stale telemetry data suspected. Triggering forced Tranquility refresh...`);
+                    localStorage.setItem(lastTimeKey, Date.now().toString());
                     setTimeout(() => {
                         fetchTelemetry(true);
                     }, 100);
                     return;
                 }
 
-                localStorage.setItem('last_eye_telemetry_data', currentDataString);
-                localStorage.setItem('last_eye_telemetry_time', Date.now().toString());
+                localStorage.setItem(lastDataKey, currentDataString);
+                localStorage.setItem(lastTimeKey, Date.now().toString());
                 setPlanetsDetails(detailsMap);
 
                 // Resolve unknown structures
