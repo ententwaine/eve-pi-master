@@ -429,12 +429,14 @@ const CommandCenterPage = () => {
                     const uniqueUnknownTypeIds = new Set();
                     const uniqueStoredItemIds = new Set();
                     
-                    // Fetch details for all planets sequentially or with retry fallback
-                    const detailsPromises = data.map(async (p) => {
+                    // Fetch details for all planets sequentially to respect ESI rate limits
+                    const detailsList = [];
+                    for (const p of data) {
                         const details = await fetchPlanetDetails(user.id, p.planet_id, token);
-                        return { planetId: p.planet_id, details };
-                    });
-                    const detailsList = await Promise.all(detailsPromises);
+                        detailsList.push({ planetId: p.planet_id, details });
+                        // 50ms delay between planet detail fetches
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    }
                     
                     const detailsMap = {};
                     detailsList.forEach(item => {
@@ -480,20 +482,21 @@ const CommandCenterPage = () => {
                         await Promise.all(typePromises);
                     }
                     
-                    // Fetch lowest Jita sell orders for all stored items in parallel
+                    // Fetch lowest Jita sell orders for all stored items sequentially
                     const JITA_REGION_ID = 10000002;
                     const JITA_SYSTEM_ID = 30000144;
                     const fetchedPrices = {};
                     if (uniqueStoredItemIds.size > 0) {
-                        const pricePromises = Array.from(uniqueStoredItemIds).map(async (itemId) => {
+                        for (const itemId of Array.from(uniqueStoredItemIds)) {
                             try {
                                 const price = await getLowestSellOrder(JITA_REGION_ID, itemId, JITA_SYSTEM_ID);
                                 fetchedPrices[itemId] = price || 0;
                             } catch (e) {
                                 fetchedPrices[itemId] = 0;
                             }
-                        });
-                        await Promise.all(pricePromises);
+                            // 50ms delay between pricing calls
+                            await new Promise(resolve => setTimeout(resolve, 50));
+                        }
                     }
                     setPrices(fetchedPrices);
                 }

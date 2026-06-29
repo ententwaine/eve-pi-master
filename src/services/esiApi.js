@@ -1,27 +1,73 @@
 const ESI_BASE_URL = 'https://esi.evetech.net/latest';
 
-// Simple in-memory cache to avoid spamming ESI for the same data
-const cache = new Map();
+/**
+ * Standard RFC-compliant fetch wrapper for EVE ESI.
+ * Respects 'Expires' headers dynamically to optimize caching.
+ */
+const fetchWithCache = async (url, options = {}, forceRefresh = false) => {
+    const method = options.method || 'GET';
+    if (method !== 'GET') {
+        return fetch(url, options);
+    }
 
-export const fetchMarketOrders = async (regionId, typeId, orderType = 'all') => {
-    const cacheKey = `${regionId}-${typeId}-${orderType}`;
-    if (cache.has(cacheKey)) {
-        const cached = cache.get(cacheKey);
-        // Cache for 5 minutes
-        if (Date.now() - cached.timestamp < 300000) {
-            return cached.data;
+    const cacheKey = `esi-cache-${url}`;
+    
+    if (!forceRefresh) {
+        const cachedItem = localStorage.getItem(cacheKey);
+        if (cachedItem) {
+            try {
+                const { expires, data } = JSON.parse(cachedItem);
+                // Return cached version if valid
+                if (Date.now() < expires) {
+                    return {
+                        ok: true,
+                        status: 200,
+                        json: async () => data,
+                        headers: {
+                            get: (name) => {
+                                if (name.toLowerCase() === 'expires') return new Date(expires).toUTCString();
+                                return null;
+                            }
+                        }
+                    };
+                }
+            } catch (e) {
+                // Ignore parse errors and fetch fresh
+            }
         }
     }
 
+    // Query ESI Tranquility
+    const response = await fetch(url, {
+        ...options,
+        cache: forceRefresh ? 'reload' : 'default'
+    });
+
+    if (response.ok) {
+        try {
+            const data = await response.clone().json();
+            const expiresHeader = response.headers.get('expires');
+            // Cache for 5 minutes by default if no expires header found
+            const expiresTime = expiresHeader ? Date.parse(expiresHeader) : (Date.now() + 300000);
+            
+            localStorage.setItem(cacheKey, JSON.stringify({
+                expires: expiresTime,
+                data: data
+            }));
+        } catch (e) {
+            // Ignore storage full or parse errors
+        }
+    }
+    return response;
+};
+
+export const fetchMarketOrders = async (regionId, typeId, orderType = 'all') => {
     try {
-        const response = await fetch(`${ESI_BASE_URL}/markets/${regionId}/orders/?datasource=tranquility&order_type=${orderType}&type_id=${typeId}`);
+        const response = await fetchWithCache(`${ESI_BASE_URL}/markets/${regionId}/orders/?datasource=tranquility&order_type=${orderType}&type_id=${typeId}`);
         if (!response.ok) {
             throw new Error(`ESI Error: ${response.status}`);
         }
-        const data = await response.json();
-        
-        cache.set(cacheKey, { timestamp: Date.now(), data });
-        return data;
+        return await response.json();
     } catch (error) {
         console.error('Failed to fetch market orders:', error);
         return [];
@@ -29,24 +75,12 @@ export const fetchMarketOrders = async (regionId, typeId, orderType = 'all') => 
 };
 
 export const fetchMarketHistory = async (regionId, typeId) => {
-    const cacheKey = `history-${regionId}-${typeId}`;
-    if (cache.has(cacheKey)) {
-        const cached = cache.get(cacheKey);
-        // Cache history for 1 hour
-        if (Date.now() - cached.timestamp < 3600000) {
-            return cached.data;
-        }
-    }
-
     try {
-        const response = await fetch(`${ESI_BASE_URL}/markets/${regionId}/history/?datasource=tranquility&type_id=${typeId}`);
+        const response = await fetchWithCache(`${ESI_BASE_URL}/markets/${regionId}/history/?datasource=tranquility&type_id=${typeId}`);
         if (!response.ok) {
             throw new Error(`ESI Error: ${response.status}`);
         }
-        const data = await response.json();
-        
-        cache.set(cacheKey, { timestamp: Date.now(), data });
-        return data;
+        return await response.json();
     } catch (error) {
         console.error('Failed to fetch market history:', error);
         return [];
@@ -55,12 +89,11 @@ export const fetchMarketHistory = async (regionId, typeId) => {
 
 export const fetchCharacterSkills = async (characterId, token, forceRefresh = false) => {
     try {
-        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility`, {
-            cache: forceRefresh ? 'reload' : 'no-store',
+        const response = await fetchWithCache(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
-        });
+        }, forceRefresh);
         if (!response.ok) throw new Error('Failed to fetch skills');
         return await response.json();
     } catch (error) {
@@ -71,12 +104,11 @@ export const fetchCharacterSkills = async (characterId, token, forceRefresh = fa
 
 export const fetchPlanetaryColonies = async (characterId, token, forceRefresh = false) => {
     try {
-        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility`, {
-            cache: forceRefresh ? 'reload' : 'no-store',
+        const response = await fetchWithCache(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
-        });
+        }, forceRefresh);
         if (!response.ok) throw new Error('Failed to fetch planets');
         return await response.json();
     } catch (error) {
@@ -90,12 +122,11 @@ export const fetchPlanetDetails = async (characterId, planetId, token, forceRefr
     let delay = 300;
     while (retries > 0) {
         try {
-            const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
-                cache: forceRefresh ? 'reload' : 'no-store',
+            const response = await fetchWithCache(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
-            });
+            }, forceRefresh);
             if (response.ok) {
                 return await response.json();
             }
@@ -119,14 +150,10 @@ export const fetchPlanetDetails = async (characterId, planetId, token, forceRefr
 };
 
 export const fetchUniversePlanet = async (planetId) => {
-    const cacheKey = `universe-planet-${planetId}`;
-    if (cache.has(cacheKey)) return cache.get(cacheKey).data;
     try {
-        const response = await fetch(`${ESI_BASE_URL}/universe/planets/${planetId}/?datasource=tranquility`);
+        const response = await fetchWithCache(`${ESI_BASE_URL}/universe/planets/${planetId}/?datasource=tranquility`);
         if (!response.ok) throw new Error(`Failed to fetch universe planet ${planetId}`);
-        const data = await response.json();
-        cache.set(cacheKey, { timestamp: Date.now(), data });
-        return data;
+        return await response.json();
     } catch (error) {
         console.error(error);
         return null;
@@ -134,14 +161,10 @@ export const fetchUniversePlanet = async (planetId) => {
 };
 
 export const fetchUniverseSystem = async (systemId) => {
-    const cacheKey = `universe-system-${systemId}`;
-    if (cache.has(cacheKey)) return cache.get(cacheKey).data;
     try {
-        const response = await fetch(`${ESI_BASE_URL}/universe/systems/${systemId}/?datasource=tranquility`);
+        const response = await fetchWithCache(`${ESI_BASE_URL}/universe/systems/${systemId}/?datasource=tranquility`);
         if (!response.ok) throw new Error(`Failed to fetch universe system ${systemId}`);
-        const data = await response.json();
-        cache.set(cacheKey, { timestamp: Date.now(), data });
-        return data;
+        return await response.json();
     } catch (error) {
         console.error(error);
         return null;
@@ -152,14 +175,10 @@ export const getLowestSellOrder = async (regionId, typeId, systemId = null) => {
     const orders = await fetchMarketOrders(regionId, typeId, 'sell');
     let validOrders = orders;
     
-    // Optionally filter by system if provided (e.g. strict Jita 4-4 only instead of whole region)
     if (systemId) {
         validOrders = orders.filter(o => o.system_id === systemId);
     }
-    
     if (validOrders.length === 0) return 0;
-    
-    // Find the minimum price
     return validOrders.reduce((min, p) => p.price < min ? p.price : min, validOrders[0].price);
 };
 
@@ -170,22 +189,15 @@ export const getHighestBuyOrder = async (regionId, typeId, systemId = null) => {
     if (systemId) {
         validOrders = orders.filter(o => o.system_id === systemId);
     }
-    
     if (validOrders.length === 0) return 0;
-    
-    // Find the maximum price
     return validOrders.reduce((max, p) => p.price > max ? p.price : max, validOrders[0].price);
 };
 
 export const fetchUniverseType = async (typeId) => {
-    const cacheKey = `universe-type-${typeId}`;
-    if (cache.has(cacheKey)) return cache.get(cacheKey).data;
     try {
-        const response = await fetch(`${ESI_BASE_URL}/universe/types/${typeId}/?datasource=tranquility`);
+        const response = await fetchWithCache(`${ESI_BASE_URL}/universe/types/${typeId}/?datasource=tranquility`);
         if (!response.ok) throw new Error(`Failed to fetch universe type ${typeId}`);
-        const data = await response.json();
-        cache.set(cacheKey, { timestamp: Date.now(), data });
-        return data;
+        return await response.json();
     } catch (error) {
         console.error(error);
         return null;
