@@ -405,7 +405,7 @@ const PlanetCard = ({ planet, token, userId, details, prices, onReportStorage })
 };
 
 const CommandCenterPage = () => {
-    const { user, token } = useAuth();
+    const { user, token, login, characters, switchCharacter } = useAuth();
     const [planets, setPlanets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isRefetching, setIsRefetching] = useState(false);
@@ -577,8 +577,35 @@ const CommandCenterPage = () => {
         <div className="cc-container fade-in">
             <div className="cc-header">
                 <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
                         <h1 className="text-primary" style={{ margin: 0, fontSize: '1.8rem' }}>PI Command Center</h1>
+                        
+                        {/* Character Switcher Selector */}
+                        {characters.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', background: 'rgba(0, 0, 0, 0.4)', padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--color-primary)' }}>👤</span>
+                                <select
+                                    value={user.id}
+                                    onChange={(e) => switchCharacter(e.target.value)}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: 'var(--color-primary)',
+                                        fontSize: '0.8rem',
+                                        outline: 'none',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold'
+                                    }}
+                                >
+                                    {characters.map(char => (
+                                        <option key={char.id} value={char.id} style={{ background: '#111', color: '#fff' }}>
+                                            {char.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
                         <button 
                             className="btn btn-secondary" 
                             style={{ padding: 'var(--space-xs) var(--space-sm)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -587,8 +614,16 @@ const CommandCenterPage = () => {
                         >
                             <span>🔄</span> {isRefetching ? "Syncing..." : "Force Sync"}
                         </button>
+
+                        <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: 'var(--space-xs) var(--space-sm)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'var(--color-accent)' }}
+                            onClick={login}
+                        >
+                            <span>➕</span> Add Character
+                        </button>
                     </div>
-                    <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>
+                    <p className="text-muted" style={{ margin: '8px 0 0 0', fontSize: '0.9rem' }}>
                         {isRefetching 
                             ? "Force-syncing live Tranquility state, bypassing caches..." 
                             : `Live telemetry for ${user.name}'s planetary network.`}
