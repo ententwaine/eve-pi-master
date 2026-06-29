@@ -440,7 +440,7 @@ const EyePlanetCard = ({ planet, details, prices }) => {
 };
 
 const EyePage = () => {
-    const { user, token } = useAuth();
+    const { user, token, login } = useAuth();
     const [planets, setPlanets] = useState([]);
     const [planetsDetails, setPlanetsDetails] = useState({});
     const [prices, setPrices] = useState({});
@@ -649,7 +649,7 @@ const EyePage = () => {
                     <p className="text-muted" style={{ maxWidth: '550px', margin: 'var(--space-md) auto' }}>
                         Connect your EVE Online SSO Account to establish secure telemetry links with your active planetary Command Centers, extraction fields, and storage routing grids.
                     </p>
-                    <button className="eye-hud-btn glow-cyan" onClick={() => window.location.href='/callback'}>CONNECT SECURE ESI UPLINK</button>
+                    <button className="eye-hud-btn glow-cyan" onClick={login}>CONNECT SECURE ESI UPLINK</button>
                 </div>
             </div>
         );

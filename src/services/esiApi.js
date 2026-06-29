@@ -58,10 +58,7 @@ export const fetchCharacterSkills = async (characterId, token, forceRefresh = fa
         const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility`, {
             cache: forceRefresh ? 'reload' : 'no-store',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
+                'Authorization': `Bearer ${token}`
             }
         });
         if (!response.ok) throw new Error('Failed to fetch skills');
@@ -77,10 +74,7 @@ export const fetchPlanetaryColonies = async (characterId, token, forceRefresh = 
         const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility`, {
             cache: forceRefresh ? 'reload' : 'no-store',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
+                'Authorization': `Bearer ${token}`
             }
         });
         if (!response.ok) throw new Error('Failed to fetch planets');
@@ -99,10 +93,7 @@ export const fetchPlanetDetails = async (characterId, planetId, token, forceRefr
             const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
                 cache: forceRefresh ? 'reload' : 'no-store',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
+                    'Authorization': `Bearer ${token}`
                 }
             });
             if (response.ok) {
