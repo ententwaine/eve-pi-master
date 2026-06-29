@@ -679,10 +679,20 @@ const EyePage = () => {
                 <div className="eye-hud-header-left">
                     <div className={isRefetching ? "eye-glowing-indicator refetching" : "eye-glowing-indicator"}></div>
                     <div>
-                        <h1 className="eye-neon-title">
-                            {isRefetching ? "PI EYE • RECOVERY SYNC..." : "PI EYE • OVERSEE PANEL"}
-                        </h1>
-                        <p className="text-muted">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                            <h1 className="eye-neon-title" style={{ margin: 0 }}>
+                                {isRefetching ? "PI EYE • RECOVERY SYNC..." : "PI EYE • OVERSEE PANEL"}
+                            </h1>
+                            <button 
+                                className="eye-hud-btn glow-cyan" 
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', height: '24px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                onClick={() => fetchTelemetry(true)}
+                                disabled={isRefetching}
+                            >
+                                <span>🔄</span> {isRefetching ? "SYNCING..." : "FORCE SYNC"}
+                            </button>
+                        </div>
+                        <p className="text-muted" style={{ marginTop: '4px' }}>
                             {isRefetching 
                                 ? "Bypassing intermediate CDN cache filters and force-syncing fresh Tranquility state..." 
                                 : `Real-time status monitoring, warning scans, and stored asset valuations for ${user.name}.`}

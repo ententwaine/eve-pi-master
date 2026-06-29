@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchPlanetaryColonies, fetchPlanetDetails, fetchUniversePlanet, fetchUniverseSystem, fetchUniverseType, getLowestSellOrder } from '../../services/esiApi';
 import { getStructureDataByTypeId, registerStructureType } from '../../data/pi_structures';
@@ -408,103 +408,115 @@ const CommandCenterPage = () => {
     const { user, token } = useAuth();
     const [planets, setPlanets] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isRefetching, setIsRefetching] = useState(false);
     const [prices, setPrices] = useState({});
     const [planetsDetails, setPlanetsDetails] = useState({});
     const [planetStorageReports, setPlanetStorageReports] = useState({});
 
     // Parent Telemetry Pre-Loader
-    useEffect(() => {
-        setLoading(true);
-        setPlanets([]);
-        setPlanetsDetails({});
-        setPlanetStorageReports({});
-        setPrices({});
+    const loadPlanetsAndPrices = useCallback(async (isForced = false) => {
+        if (!user || !token) return;
+        
+        if (isForced) {
+            setIsRefetching(true);
+        } else {
+            setLoading(true);
+            setPlanets([]);
+            setPlanetsDetails({});
+            setPlanetStorageReports({});
+            setPrices({});
+        }
 
-        const loadPlanetsAndPrices = async () => {
-            if (user && token) {
-                const data = await fetchPlanetaryColonies(user.id, token);
-                setPlanets(data || []);
+        try {
+            const data = await fetchPlanetaryColonies(user.id, token, isForced);
+            setPlanets(data || []);
+            
+            if (data && data.length > 0) {
+                const uniqueUnknownTypeIds = new Set();
+                const uniqueStoredItemIds = new Set();
                 
-                if (data && data.length > 0) {
-                    const uniqueUnknownTypeIds = new Set();
-                    const uniqueStoredItemIds = new Set();
-                    
-                    // Fetch details for all planets sequentially to respect ESI rate limits
-                    const detailsList = [];
-                    for (const p of data) {
-                        const details = await fetchPlanetDetails(user.id, p.planet_id, token);
-                        detailsList.push({ planetId: p.planet_id, details });
-                        // 50ms delay between planet detail fetches
-                        await new Promise(resolve => setTimeout(resolve, 50));
-                    }
-                    
-                    const detailsMap = {};
-                    detailsList.forEach(item => {
-                        detailsMap[item.planetId] = item.details;
-                    });
-                    setPlanetsDetails(detailsMap);
-                    
-                    detailsList.forEach(item => {
-                        const planetDetails = item.details;
-                        if (planetDetails && planetDetails.pins) {
-                            planetDetails.pins.forEach(pin => {
-                                const struct = getStructureDataByTypeId(pin.type_id);
-                                if (struct.name.startsWith('Unknown Structure')) {
-                                    uniqueUnknownTypeIds.add(pin.type_id);
+                // Fetch details for all planets sequentially to respect ESI rate limits
+                const detailsList = [];
+                for (const p of data) {
+                    const details = await fetchPlanetDetails(user.id, p.planet_id, token, isForced);
+                    detailsList.push({ planetId: p.planet_id, details });
+                    // 50ms delay between planet detail fetches
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+                const detailsMap = {};
+                detailsList.forEach(item => {
+                    detailsMap[item.planetId] = item.details;
+                });
+                setPlanetsDetails(detailsMap);
+                
+                detailsList.forEach(item => {
+                    const planetDetails = item.details;
+                    if (planetDetails && planetDetails.pins) {
+                        planetDetails.pins.forEach(pin => {
+                            const struct = getStructureDataByTypeId(pin.type_id);
+                            if (struct.name.startsWith('Unknown Structure')) {
+                                uniqueUnknownTypeIds.add(pin.type_id);
+                            }
+                            
+                            const structNameLower = struct.name.toLowerCase();
+                            const isCommandCenter = structNameLower.includes('command center') || 
+                                                    [2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(Number(pin.type_id));
+                            const isExtractor = structNameLower.includes('extractor') || 
+                                                pin.extractor_details !== undefined;
+                            const isIndustry = structNameLower.includes('industry') || 
+                                               structNameLower.includes('processor') || 
+                                               pin.factory_details !== undefined;
+                                               
+                            if (!isCommandCenter && !isExtractor && !isIndustry) {
+                                if (pin.contents) {
+                                    pin.contents.forEach(item => uniqueStoredItemIds.add(item.type_id));
                                 }
-                                
-                                const structNameLower = struct.name.toLowerCase();
-                                const isCommandCenter = structNameLower.includes('command center') || 
-                                                        [2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(Number(pin.type_id));
-                                const isExtractor = structNameLower.includes('extractor') || 
-                                                    pin.extractor_details !== undefined;
-                                const isIndustry = structNameLower.includes('industry') || 
-                                                   structNameLower.includes('processor') || 
-                                                   pin.factory_details !== undefined;
-                                                   
-                                if (!isCommandCenter && !isExtractor && !isIndustry) {
-                                    if (pin.contents) {
-                                        pin.contents.forEach(item => uniqueStoredItemIds.add(item.type_id));
-                                    }
-                                }
-                            });
-                        }
-                    });
-                    
-                    // Resolve unknown type IDs in parallel via universe types endpoint
-                    if (uniqueUnknownTypeIds.size > 0) {
-                        const typePromises = Array.from(uniqueUnknownTypeIds).map(async (typeId) => {
-                            const typeInfo = await fetchUniverseType(typeId);
-                            if (typeInfo) {
-                                registerStructureType(typeId, typeInfo);
                             }
                         });
-                        await Promise.all(typePromises);
                     }
-                    
-                    // Fetch lowest Jita sell orders for all stored items sequentially
-                    const JITA_REGION_ID = 10000002;
-                    const JITA_SYSTEM_ID = 30000144;
-                    const fetchedPrices = {};
-                    if (uniqueStoredItemIds.size > 0) {
-                        for (const itemId of Array.from(uniqueStoredItemIds)) {
-                            try {
-                                const price = await getLowestSellOrder(JITA_REGION_ID, itemId, JITA_SYSTEM_ID);
-                                fetchedPrices[itemId] = price || 0;
-                            } catch (e) {
-                                fetchedPrices[itemId] = 0;
-                            }
-                            // 50ms delay between pricing calls
-                            await new Promise(resolve => setTimeout(resolve, 50));
+                });
+                
+                // Resolve unknown type IDs in parallel via universe types endpoint
+                if (uniqueUnknownTypeIds.size > 0) {
+                    const typePromises = Array.from(uniqueUnknownTypeIds).map(async (typeId) => {
+                        const typeInfo = await fetchUniverseType(typeId);
+                        if (typeInfo) {
+                            registerStructureType(typeId, typeInfo);
                         }
-                    }
-                    setPrices(fetchedPrices);
+                    });
+                    await Promise.all(typePromises);
                 }
+                
+                // Fetch lowest Jita sell orders for all stored items sequentially
+                const JITA_REGION_ID = 10000002;
+                const JITA_SYSTEM_ID = 30000144;
+                const fetchedPrices = {};
+                if (uniqueStoredItemIds.size > 0) {
+                    for (const itemId of Array.from(uniqueStoredItemIds)) {
+                        try {
+                            const price = await getLowestSellOrder(JITA_REGION_ID, itemId, JITA_SYSTEM_ID);
+                            fetchedPrices[itemId] = price || 0;
+                        } catch (e) {
+                            fetchedPrices[itemId] = 0;
+                        }
+                        // 50ms delay between pricing calls
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    }
+                }
+                setPrices(fetchedPrices);
             }
+        } catch (e) {
+            console.error("Failed to load telemetry:", e);
+        } finally {
             setLoading(false);
-        };
-        loadPlanetsAndPrices();
+            setIsRefetching(false);
+        }
     }, [user, token]);
+
+    useEffect(() => {
+        loadPlanetsAndPrices(false);
+    }, [loadPlanetsAndPrices]);
 
     const handleReportStorage = React.useCallback((planetId, report) => {
         setPlanetStorageReports(prev => {
@@ -565,9 +577,21 @@ const CommandCenterPage = () => {
         <div className="cc-container fade-in">
             <div className="cc-header">
                 <div>
-                    <h1 className="text-primary" style={{ margin: 0, fontSize: '1.8rem' }}>PI Command Center</h1>
-                    <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
-                        Live telemetry for {user.name}'s planetary network.
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                        <h1 className="text-primary" style={{ margin: 0, fontSize: '1.8rem' }}>PI Command Center</h1>
+                        <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: 'var(--space-xs) var(--space-sm)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => loadPlanetsAndPrices(true)}
+                            disabled={isRefetching}
+                        >
+                            <span>🔄</span> {isRefetching ? "Syncing..." : "Force Sync"}
+                        </button>
+                    </div>
+                    <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>
+                        {isRefetching 
+                            ? "Force-syncing live Tranquility state, bypassing caches..." 
+                            : `Live telemetry for ${user.name}'s planetary network.`}
                     </p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
