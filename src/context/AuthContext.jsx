@@ -5,8 +5,8 @@ const AuthContext = createContext();
 // Using environment variables for Client ID
 const CLIENT_ID = import.meta.env.VITE_EVE_CLIENT_ID || 'YOUR_CLIENT_ID_HERE';
 const CALLBACK_URL = `${window.location.origin}/callback`;
-// offline_access is mandatory to receive refresh_token for background session renewal
-const SCOPES = 'esi-planets.manage_planets.v1 esi-skills.read_skills.v1 offline_access';
+// offline_access is not used by EVE SSO; refresh tokens are returned by default on successful authorization
+const SCOPES = 'esi-planets.manage_planets.v1 esi-skills.read_skills.v1';
 
 // PKCE Helper Functions
 const generateRandomString = (length) => {
