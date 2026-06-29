@@ -53,9 +53,10 @@ export const fetchMarketHistory = async (regionId, typeId) => {
     }
 };
 
-export const fetchCharacterSkills = async (characterId, token) => {
+export const fetchCharacterSkills = async (characterId, token, forceRefresh = false) => {
     try {
-        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility&_cb=${Date.now()}`, {
+        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility`, {
+            cache: forceRefresh ? 'reload' : 'no-store',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -71,9 +72,10 @@ export const fetchCharacterSkills = async (characterId, token) => {
     }
 };
 
-export const fetchPlanetaryColonies = async (characterId, token) => {
+export const fetchPlanetaryColonies = async (characterId, token, forceRefresh = false) => {
     try {
-        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility&_cb=${Date.now()}`, {
+        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility`, {
+            cache: forceRefresh ? 'reload' : 'no-store',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -89,12 +91,13 @@ export const fetchPlanetaryColonies = async (characterId, token) => {
     }
 };
 
-export const fetchPlanetDetails = async (characterId, planetId, token) => {
+export const fetchPlanetDetails = async (characterId, planetId, token, forceRefresh = false) => {
     let retries = 3;
     let delay = 300;
     while (retries > 0) {
         try {
-            const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility&_cb=${Date.now()}`, {
+            const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
+                cache: forceRefresh ? 'reload' : 'no-store',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Cache-Control': 'no-cache, no-store, must-revalidate',

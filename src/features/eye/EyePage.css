@@ -124,6 +124,12 @@
     animation: eye-glow-pulse 1.8s infinite alternate;
 }
 
+.eye-glowing-indicator.refetching {
+    background: #ffb300;
+    box-shadow: 0 0 10px #ffb300, 0 0 20px #ffb300;
+    animation: eye-glow-pulse 0.4s infinite alternate;
+}
+
 @keyframes eye-glow-pulse {
     0% { opacity: 0.4; }
     100% { opacity: 1; }

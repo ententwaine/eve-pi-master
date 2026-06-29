@@ -445,88 +445,115 @@ const EyePage = () => {
     const [planetsDetails, setPlanetsDetails] = useState({});
     const [prices, setPrices] = useState({});
     const [loading, setLoading] = useState(true);
+    const [isRefetching, setIsRefetching] = useState(false);
 
-    // Fetch ESI network once
-    useEffect(() => {
-        const fetchTelemetry = async () => {
-            if (user && token) {
-                try {
-                    const data = await fetchPlanetaryColonies(user.id, token);
-                    setPlanets(data || []);
+    // Fetch ESI network with cache-busting redundancy check
+    const fetchTelemetry = useCallback(async (isForced = false) => {
+        if (!user || !token) return;
+        if (isForced) {
+            setIsRefetching(true);
+        }
 
-                    if (data && data.length > 0) {
-                        const uniqueUnknownTypeIds = new Set();
-                        const uniqueItemIds = new Set();
+        try {
+            // Fetch colonies using cache-busting flags
+            const data = await fetchPlanetaryColonies(user.id, token, isForced);
+            setPlanets(data || []);
 
-                        // Query all details in parallel using exponential backoff retry handler
-                        const detailsPromises = data.map(async (p) => {
-                            const details = await fetchPlanetDetails(user.id, p.planet_id, token);
-                            return { planetId: p.planet_id, details };
-                        });
-                        const detailsList = await Promise.all(detailsPromises);
+            if (data && data.length > 0) {
+                const uniqueUnknownTypeIds = new Set();
+                const uniqueItemIds = new Set();
 
-                        const detailsMap = {};
-                        detailsList.forEach(item => {
-                            detailsMap[item.planetId] = item.details;
+                // Fetch details for all planets in parallel
+                const detailsPromises = data.map(async (p) => {
+                    const details = await fetchPlanetDetails(user.id, p.planet_id, token, isForced);
+                    return { planetId: p.planet_id, details };
+                });
+                const detailsList = await Promise.all(detailsPromises);
+
+                const detailsMap = {};
+                detailsList.forEach(item => {
+                    detailsMap[item.planetId] = item.details;
+                    
+                    const planetDetails = item.details;
+                    if (planetDetails && planetDetails.pins) {
+                        planetDetails.pins.forEach(pin => {
+                            const struct = getStructureDataByTypeId(pin.type_id);
+                            if (struct.name.startsWith('Unknown Structure')) {
+                                uniqueUnknownTypeIds.add(pin.type_id);
+                            }
                             
-                            const planetDetails = item.details;
-                            if (planetDetails && planetDetails.pins) {
-                                planetDetails.pins.forEach(pin => {
-                                    const struct = getStructureDataByTypeId(pin.type_id);
-                                    if (struct.name.startsWith('Unknown Structure')) {
-                                        uniqueUnknownTypeIds.add(pin.type_id);
-                                    }
-                                    
-                                    const nameLower = struct.name.toLowerCase();
-                                    const isCommandCenter = nameLower.includes('command center') || 
-                                                            [2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(Number(pin.type_id));
-                                    const isExtractor = nameLower.includes('extractor') || pin.extractor_details !== undefined;
-                                    const isIndustry = nameLower.includes('industry') || nameLower.includes('processor') || pin.factory_details !== undefined;
+                            const nameLower = struct.name.toLowerCase();
+                            const isCommandCenter = nameLower.includes('command center') || 
+                                                    [2254, 2524, 2525, 2530, 2532, 2549, 2555, 2559].includes(Number(pin.type_id));
+                            const isExtractor = nameLower.includes('extractor') || pin.extractor_details !== undefined;
+                            const isIndustry = nameLower.includes('industry') || nameLower.includes('processor') || pin.factory_details !== undefined;
 
-                                    if (!isCommandCenter && !isExtractor && !isIndustry && pin.contents) {
-                                        pin.contents.forEach(it => uniqueItemIds.add(it.type_id));
-                                    }
-                                });
+                            if (!isCommandCenter && !isExtractor && !isIndustry && pin.contents) {
+                                pin.contents.forEach(it => uniqueItemIds.add(it.type_id));
                             }
                         });
-                        setPlanetsDetails(detailsMap);
-
-                        // Resolve unknown structures
-                        if (uniqueUnknownTypeIds.size > 0) {
-                            const typePromises = Array.from(uniqueUnknownTypeIds).map(async (typeId) => {
-                                const typeInfo = await fetchUniverseType(typeId);
-                                if (typeInfo) {
-                                    registerStructureType(typeId, typeInfo);
-                                }
-                            });
-                            await Promise.all(typePromises);
-                        }
-
-                        // Resolve Market Prices (lowest Jita Sell Order)
-                        const JITA_REGION_ID = 10000002;
-                        const JITA_SYSTEM_ID = 30000144;
-                        const fetchedPrices = {};
-                        if (uniqueItemIds.size > 0) {
-                            const pricePromises = Array.from(uniqueItemIds).map(async (itemId) => {
-                                try {
-                                    const price = await getLowestSellOrder(JITA_REGION_ID, itemId, JITA_SYSTEM_ID);
-                                    fetchedPrices[itemId] = price || 0;
-                                } catch (e) {
-                                    fetchedPrices[itemId] = 0;
-                                }
-                            });
-                            await Promise.all(pricePromises);
-                        }
-                        setPrices(fetchedPrices);
                     }
-                } catch (err) {
-                    console.error("Failed to load Oversight eye data:", err);
+                });
+
+                // REDUNDANCY STALE DATA CHECK:
+                // Compare current payload string representation with the last localStorage state
+                const currentDataString = JSON.stringify(detailsMap);
+                const lastDataString = localStorage.getItem('last_eye_telemetry_data');
+                const lastFetchTime = localStorage.getItem('last_eye_telemetry_time');
+                const timeSinceLastFetch = Date.now() - Number(lastFetchTime || 0);
+
+                if (!isForced && lastDataString && currentDataString === lastDataString && timeSinceLastFetch > 5000) {
+                    console.warn("Redundancy check failed: Stale telemetry data suspected. Triggering forced Tranquility refresh...");
+                    localStorage.setItem('last_eye_telemetry_time', Date.now().toString());
+                    setTimeout(() => {
+                        fetchTelemetry(true);
+                    }, 100);
+                    return;
                 }
+
+                localStorage.setItem('last_eye_telemetry_data', currentDataString);
+                localStorage.setItem('last_eye_telemetry_time', Date.now().toString());
+                setPlanetsDetails(detailsMap);
+
+                // Resolve unknown structures
+                if (uniqueUnknownTypeIds.size > 0) {
+                    const typePromises = Array.from(uniqueUnknownTypeIds).map(async (typeId) => {
+                        const typeInfo = await fetchUniverseType(typeId);
+                        if (typeInfo) {
+                            registerStructureType(typeId, typeInfo);
+                        }
+                    });
+                    await Promise.all(typePromises);
+                }
+
+                // Resolve Market Prices (lowest Jita Sell Order)
+                const JITA_REGION_ID = 10000002;
+                const JITA_SYSTEM_ID = 30000144;
+                const fetchedPrices = {};
+                if (uniqueItemIds.size > 0) {
+                    const pricePromises = Array.from(uniqueItemIds).map(async (itemId) => {
+                        try {
+                            const price = await getLowestSellOrder(JITA_REGION_ID, itemId, JITA_SYSTEM_ID);
+                            fetchedPrices[itemId] = price || 0;
+                        } catch (e) {
+                            fetchedPrices[itemId] = 0;
+                        }
+                    });
+                    await Promise.all(pricePromises);
+                }
+                setPrices(fetchedPrices);
             }
+        } catch (err) {
+            console.error("Failed to load Oversight eye data:", err);
+        } finally {
             setLoading(false);
-        };
-        fetchTelemetry();
+            setIsRefetching(false);
+        }
     }, [user, token]);
+
+    useEffect(() => {
+        fetchTelemetry(false);
+    }, [fetchTelemetry]);
 
     // Aggregate Alerts & Stored Commodities
     const { alertsList, warehouseStock, totalStoredValuation, counters } = useMemo(() => {
@@ -639,10 +666,16 @@ const EyePage = () => {
             {/* Header Tactical Display */}
             <div className="eye-page-header glass-panel">
                 <div className="eye-hud-header-left">
-                    <div className="eye-glowing-indicator"></div>
+                    <div className={isRefetching ? "eye-glowing-indicator refetching" : "eye-glowing-indicator"}></div>
                     <div>
-                        <h1 className="eye-neon-title">PI EYE &bull; OVERSEE PANEL</h1>
-                        <p className="text-muted">Real-time status monitoring, warning scans, and stored asset valuations for {user.name}.</p>
+                        <h1 className="eye-neon-title">
+                            {isRefetching ? "PI EYE • RECOVERY SYNC..." : "PI EYE • OVERSEE PANEL"}
+                        </h1>
+                        <p className="text-muted">
+                            {isRefetching 
+                                ? "Bypassing intermediate CDN cache filters and force-syncing fresh Tranquility state..." 
+                                : `Real-time status monitoring, warning scans, and stored asset valuations for ${user.name}.`}
+                        </p>
                     </div>
                 </div>
                 <div className="eye-hud-counters">
