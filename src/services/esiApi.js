@@ -89,11 +89,12 @@ export const fetchMarketHistory = async (regionId, typeId) => {
 
 export const fetchCharacterSkills = async (characterId, token, forceRefresh = false) => {
     try {
-        const response = await fetchWithCache(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility`, {
+        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/skills/?datasource=tranquility`, {
+            cache: forceRefresh ? 'reload' : 'no-cache',
             headers: {
                 'Authorization': `Bearer ${token}`
             }
-        }, forceRefresh);
+        });
         if (!response.ok) throw new Error('Failed to fetch skills');
         return await response.json();
     } catch (error) {
@@ -104,11 +105,12 @@ export const fetchCharacterSkills = async (characterId, token, forceRefresh = fa
 
 export const fetchPlanetaryColonies = async (characterId, token, forceRefresh = false) => {
     try {
-        const response = await fetchWithCache(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility`, {
+        const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/?datasource=tranquility`, {
+            cache: forceRefresh ? 'reload' : 'no-cache',
             headers: {
                 'Authorization': `Bearer ${token}`
             }
-        }, forceRefresh);
+        });
         if (!response.ok) throw new Error('Failed to fetch planets');
         return await response.json();
     } catch (error) {
@@ -122,24 +124,29 @@ export const fetchPlanetDetails = async (characterId, planetId, token, forceRefr
     let delay = 300;
     while (retries > 0) {
         try {
-            const response = await fetchWithCache(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
+            const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}/planets/${planetId}/?datasource=tranquility`, {
+                cache: forceRefresh ? 'reload' : 'no-cache',
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
-            }, forceRefresh);
+            });
+            
             if (response.ok) {
                 return await response.json();
             }
-            if (response.status === 420 || response.status >= 500) {
+            
+            // Only retry on transient rate limiting (420/429) or server errors (5xx)
+            if (response.status === 420 || response.status === 429 || response.status >= 500) {
                 retries--;
                 if (retries === 0) return null;
                 await new Promise(resolve => setTimeout(resolve, delay));
                 delay *= 2;
             } else {
-                throw new Error(`ESI Error: ${response.status}`);
+                console.error(`ESI non-retryable error ${response.status} for planet ${planetId}`);
+                return null;
             }
         } catch (error) {
-            console.error(`ESI details fetch attempt failed for planet ${planetId}:`, error);
+            console.error(`ESI details fetch network error for planet ${planetId}:`, error);
             retries--;
             if (retries === 0) return null;
             await new Promise(resolve => setTimeout(resolve, delay));
