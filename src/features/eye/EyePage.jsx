@@ -564,6 +564,13 @@ const EyePage = () => {
 
     useEffect(() => {
         fetchTelemetry(false);
+
+        // Auto-refresh telemetry every 5 minutes (force refetch)
+        const intervalId = setInterval(() => {
+            fetchTelemetry(true);
+        }, 300000);
+
+        return () => clearInterval(intervalId);
     }, [fetchTelemetry]);
 
     // Aggregate Alerts & Stored Commodities
